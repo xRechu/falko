@@ -1,0 +1,3 @@
+# Placeholder for Apple Pay Domain Verification
+# Replace this file content with the exact association file downloaded from Apple Developer -> Certificates, Identifiers & Profiles -> Merchant IDs -> Domain Verification.
+# The content must match exactly (including newlines). Do not modify formatting.
