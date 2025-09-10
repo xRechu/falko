@@ -13,12 +13,10 @@
     "medusa"
   ],
   "scripts": {
-  "build": "medusa build && node src/scripts/postBuild.js",
+    "build": "medusa build && node src/scripts/postBuild.js",
     "seed": "medusa exec ./src/scripts/seed.ts",
     "ib": "init-backend",
-  "start": "init-backend && cd .medusa/server && medusa start --verbose",
-  "start:server": "init-backend && cd .medusa/server && medusa start --verbose",
-  "start:worker": "cd .medusa/server && medusa start --verbose",
+  "start": "init-backend && cd .medusa/server && PORT=${PORT:-9000} medusa start --verbose --port $PORT",
     "dev": "medusa develop",
     "email:dev": "email dev --dir=./src/modules/email-notifications/templates --port=3002"
   },
@@ -38,7 +36,7 @@
     
     "awilix": "^8.0.1",
     "medusajs-launch-utils": "0.0.18",
-    
+    git init    
     "pg": "^8.13.1",
     "resend": "4.0.1",
     "ulid": "^2.3.0"
