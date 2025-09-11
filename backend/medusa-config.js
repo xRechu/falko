@@ -113,7 +113,7 @@ const medusaConfig = {
   ],
   plugins: [
     {
-      resolve: '@falko/furgonetka-plugin',
+      resolve: './plugins/furgonetka',
       options: {
         prefetch: false
       }
