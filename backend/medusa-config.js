@@ -54,10 +54,8 @@ const medusaConfig = {
               endpoint: process.env.R2_ENDPOINT,
               region: process.env.R2_REGION || 'auto',
               bucket: process.env.R2_BUCKET,
-              credentials: {
-                accessKeyId: process.env.R2_ACCESS_KEY_ID,
-                secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-              },
+              access_key_id: process.env.R2_ACCESS_KEY_ID,
+            secret_access_key: process.env.R2_SECRET_ACCESS_KEY,
               forcePathStyle: true,
               s3ForcePathStyle: true,
               baseUrl: process.env.R2_PUBLIC_BASE_URL,
@@ -74,8 +72,9 @@ const medusaConfig = {
       options: {
         redisUrl: REDIS_URL
       }
-    },
-    {
+    }] : []),
+    // Only run workflow engine on non-server modes to avoid idle Redis usage on the web instance
+    ...(REDIS_URL && WORKER_MODE !== 'server' ? [{
       key: Modules.WORKFLOW_ENGINE,
       resolve: '@medusajs/workflow-engine-redis',
       options: {
