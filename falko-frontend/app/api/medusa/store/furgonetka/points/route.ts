@@ -3,7 +3,8 @@ import { NextRequest } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const proxyUrl = `http://localhost:9000/store/furgonetka/points`;
+    const base = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+    const proxyUrl = `${base}/store/furgonetka/points`;
 
     // Preferuj klucz z nagłówka klienta, potem ENV
     const clientPk = request.headers.get('x-publishable-api-key') || ''

@@ -5,7 +5,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     
     // Przekazujemy wszystkie parametry zapytania do backendu
-    const proxyUrl = `http://localhost:9000/store/furgonetka/points/map/clusters?${searchParams.toString()}`;
+    const base = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+    const proxyUrl = `${base}/store/furgonetka/points/map/clusters?${searchParams.toString()}`;
     
     console.log('🔄 Frontend Clusters Proxy -> Backend:', proxyUrl);
     

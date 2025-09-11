@@ -5,7 +5,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     
     // Przekazujemy wszystkie parametry zapytania do backendu
-    const proxyUrl = `http://localhost:9000/store/furgonetka/points/map?${searchParams.toString()}`;
+    const base = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+    const proxyUrl = `${base}/store/furgonetka/points/map?${searchParams.toString()}`;
     
     console.log('🔄 Frontend Map Proxy -> Backend:', proxyUrl);
     
@@ -53,7 +54,8 @@ export async function POST(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     
     // Przekazujemy POST request do backendu
-    const proxyUrl = `http://localhost:9000/store/furgonetka/points/map?${searchParams.toString()}`;
+    const base = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+    const proxyUrl = `${base}/store/furgonetka/points/map?${searchParams.toString()}`;
     
     console.log('🔄 Frontend Map POST Proxy -> Backend:', proxyUrl);
     console.log('📦 POST Body:', body);
