@@ -111,7 +111,14 @@ const medusaConfig = {
     }] : []),
     // Brak Stripe/Payment providers na tym etapie (użyjemy Paynow plugin później)
   ],
-  plugins: []
+  plugins: [
+    {
+      resolve: './src/plugins/furgonetka',
+      options: {
+        prefetch: false // ustaw true lub ENV FURGONETKA_FEATURE_PREFETCH=1 przed dropem
+      }
+    }
+  ]
 };
 
 export default defineConfig(medusaConfig);
