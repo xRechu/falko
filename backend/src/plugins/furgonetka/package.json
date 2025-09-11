@@ -1,0 +1,7 @@
+{
+  "name": "furgonetka-plugin",
+  "version": "0.1.0",
+  "description": "Lightweight Furgonetka integration plugin (local path)",
+  "main": "index.ts",
+  "license": "MIT"
+}

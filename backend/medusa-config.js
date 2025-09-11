@@ -113,9 +113,10 @@ const medusaConfig = {
   ],
   plugins: [
     {
+      // używamy ścieżki src (Medusa build go transpile), plugin ma package.json
       resolve: './src/plugins/furgonetka',
       options: {
-        prefetch: false // ustaw true lub ENV FURGONETKA_FEATURE_PREFETCH=1 przed dropem
+        prefetch: false
       }
     }
   ]
