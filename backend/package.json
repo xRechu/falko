@@ -13,32 +13,31 @@
     "medusa"
   ],
   "scripts": {
-  "build": "medusa build && node src/scripts/postBuild.js",
+    "build": "medusa build && node src/scripts/postBuild.js",
     "seed": "medusa exec ./src/scripts/seed.ts",
     "ib": "init-backend",
-  "start": "init-backend && cd .medusa/server && medusa start --verbose",
-  "start:server": "init-backend && cd .medusa/server && medusa start --verbose",
-  "start:worker": "cd .medusa/server && medusa start --verbose",
+    "start": "init-backend && cd .medusa/server && medusa start --verbose",
+    "start:server": "init-backend && cd .medusa/server && medusa start --verbose",
+    "start:worker": "cd .medusa/server && medusa start --verbose",
     "dev": "medusa develop",
     "email:dev": "email dev --dir=./src/modules/email-notifications/templates --port=3002"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "2.8.8",
     "@medusajs/cli": "2.8.8",
+    "@medusajs/dashboard": "2.8.8",
     "@medusajs/framework": "2.8.8",
     "@medusajs/medusa": "2.8.8",
-    "@medusajs/dashboard": "2.8.8",
-  "@medusajs/notification-sendgrid": "2.8.8",
+    "@medusajs/notification-sendgrid": "2.8.8",
+    "@medusajs/file-s3": "2.8.8",
     "@medusajs/workflow-engine-redis": "2.8.8",
     "@mikro-orm/core": "6.4.3",
     "@mikro-orm/knex": "6.4.3",
     "@mikro-orm/migrations": "6.4.3",
     "@mikro-orm/postgresql": "6.4.3",
     "@react-email/components": "^0.0.26",
-    
     "awilix": "^8.0.1",
     "medusajs-launch-utils": "0.0.18",
-    
     "pg": "^8.13.1",
     "resend": "4.0.1",
     "ulid": "^2.3.0"
@@ -46,7 +45,7 @@
   "devDependencies": {
     "@medusajs/test-utils": "2.8.8",
     "@mikro-orm/cli": "6.4.3",
-    "@swc/core": "1.5.7",
+    "@swc/core": "^1.5.7",
     "@swc/jest": "^0.2.37",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.17.10",

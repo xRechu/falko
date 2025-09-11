@@ -48,11 +48,21 @@ const medusaConfig = {
       options: {
         providers: [
           {
-            resolve: '@medusajs/file-local',
-            id: 'local',
+            resolve: '@medusajs/file-s3',
+            id: 'r2',
             options: {
-              upload_dir: 'static',
-              backend_url: `${BACKEND_URL}/static`
+              endpoint: process.env.R2_ENDPOINT,
+              region: process.env.R2_REGION || 'auto',
+              bucket: process.env.R2_BUCKET,
+              credentials: {
+                accessKeyId: process.env.R2_ACCESS_KEY_ID,
+                secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+              },
+              forcePathStyle: true,
+              s3ForcePathStyle: true,
+              baseUrl: process.env.R2_PUBLIC_BASE_URL,
+              // opcjonalnie: możesz wystawić publiczne URL jeśli masz publiczny domen/CDN
+              // jeśli nie ustawisz baseUrl – provider zwróci domyślny endpoint + bucket + key
             }
           }
         ]
