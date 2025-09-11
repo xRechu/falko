@@ -113,8 +113,7 @@ const medusaConfig = {
   ],
   plugins: [
     {
-      // używamy ścieżki src (Medusa build go transpile), plugin ma package.json
-      resolve: './src/plugins/furgonetka',
+      resolve: '@falko/furgonetka-plugin',
       options: {
         prefetch: false
       }

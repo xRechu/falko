@@ -1,0 +1,16 @@
+{
+  "name": "@falko/furgonetka-plugin",
+  "version": "0.1.0",
+  "description": "Furgonetka integration plugin (internal)",
+  "license": "MIT",
+  "main": "index.ts",
+  "keywords": ["medusa-v2","medusa-plugin-shipping","medusa-plugin-integration"],
+  "exports": {
+    "./package.json": "./package.json",
+    "./*": "./.medusa/server/src/*.js"
+  },
+  "devDependencies": {},
+  "peerDependencies": {
+    "@medusajs/framework": "2.x"
+  }
+}
