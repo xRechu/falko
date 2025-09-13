@@ -1,0 +1,10 @@
+name = "falko-frontend"
+compatibility_date = "2025-09-13"
+
+[vars]
+# Cloudflare Pages runtime env vars (mirror NEXT_PUBLIC_*) if needed
+# MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app"
+# MEDUSA_PUBLISHABLE_KEY = "pk_..."
+
+[build]
+command = "npm run build:cf"

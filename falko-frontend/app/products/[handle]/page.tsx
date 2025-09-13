@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+
+export const runtime = 'edge';
 import { notFound } from "next/navigation";
 import { ProductDetail } from "@/lib/types/product";
 import ProductPageClient from "@/components/products/ProductPageClient";
