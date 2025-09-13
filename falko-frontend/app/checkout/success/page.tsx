@@ -182,7 +182,7 @@ async function pollPaymentUntilConfirmed(paymentId: string, timeoutMs = 30_000, 
   let nullCount = 0
   while (Date.now() - start < timeoutMs) {
     try {
-      const r = await fetch(`/api/payments/paynow/status?paymentId=${encodeURIComponent(paymentId)}`, { cache: 'no-store' })
+      const r = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ''}/store/payments/paynow/status?paymentId=${encodeURIComponent(paymentId)}`, { cache: 'no-store' })
       if (r.ok) {
         const data = await r.json()
         const raw = (data?.status || '').toString().toUpperCase()

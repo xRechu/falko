@@ -1,0 +1,66 @@
+import type { MedusaRequest, MedusaResponse } from '@medusajs/medusa'
+import crypto from 'crypto'
+import { calculateRequestSignatureV3, getPaynowBaseUrl } from '../../../modules/paynow/service'
+
+export async function POST(req: MedusaRequest, res: MedusaResponse) {
+  try {
+    const API_KEY = process.env.PAYNOW_API_KEY
+    const SIGNATURE_KEY = process.env.PAYNOW_SIGNATURE_KEY
+    const ENV = (process.env.PAYNOW_ENV as 'sandbox' | 'production') || 'sandbox'
+    if (!API_KEY || !SIGNATURE_KEY) return res.status(500).json({ error: 'Missing Paynow keys' })
+
+    const { amount, currency = 'PLN', externalId, description, buyer, continueUrl, paymentMethodId, authorizationCode } = req.body || {}
+    if (!amount || !externalId || !description || !buyer?.email) return res.status(400).json({ error: 'Missing required fields' })
+
+    const idempotencyKey = crypto.randomUUID()
+    const baseUrl = getPaynowBaseUrl(ENV)
+
+    const body: Record<string, any> = {
+      amount: Number(amount),
+      currency,
+      externalId: String(externalId),
+      description: String(description),
+      continueUrl: continueUrl || `${process.env.BACKEND_PUBLIC_URL || ''}/store/carts/${encodeURIComponent(String(externalId))}/complete`,
+      buyer: { email: String(buyer.email) },
+    }
+    if (paymentMethodId) body.paymentMethodId = Number(paymentMethodId)
+    if (authorizationCode) body.authorizationCode = String(authorizationCode)
+
+    const bodyString = JSON.stringify(body)
+
+    const signature = calculateRequestSignatureV3({
+      apiKey: API_KEY,
+      idempotencyKey,
+      bodyString,
+      signatureKey: SIGNATURE_KEY,
+      parameters: {},
+    })
+
+    const response = await fetch(`${baseUrl}/v3/payments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Api-Key': API_KEY,
+        'Signature': signature,
+        'Idempotency-Key': idempotencyKey,
+      },
+      body: bodyString,
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      return res.status(response.status).json({ error: 'Paynow error', details: process.env.NODE_ENV === 'production' ? undefined : text })
+    }
+
+    const data = await response.json()
+    return res.status(200).json({
+      redirectUrl: data.redirectUrl,
+      paymentId: data.paymentId,
+      status: data.status,
+    })
+  } catch (e) {
+    console.error('paynow initiate error:', e)
+    return res.status(500).json({ error: 'Internal Server Error' })
+  }
+}
