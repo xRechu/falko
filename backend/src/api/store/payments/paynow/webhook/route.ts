@@ -1,5 +1,6 @@
-import type { MedusaRequest, MedusaResponse } from '@medusajs/medusa'
-import { verifyWebhookSignature } from '../../../../modules/paynow/service'
+import type { MedusaRequest, MedusaResponse } from '@medusajs/framework'
+import { verifyWebhookSignature } from 'modules/paynow/service'
+import type { PaynowWebhookPayload } from 'modules/paynow/types'
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
@@ -12,9 +13,12 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const valid = verifyWebhookSignature(rawBody, signatureHeader, SIGNATURE_KEY)
     if (!valid) return res.status(400).send('Invalid signature')
 
-    const payload = JSON.parse(rawBody)
-    const { paymentId, externalId, status } = payload || {}
-    console.log('🔔 Paynow webhook (backend):', { paymentId, externalId, status })
+  const payload: PaynowWebhookPayload = JSON.parse(rawBody)
+  const { paymentId, externalId, status } = payload || {}
+  console.log('🔔 Paynow webhook (backend):', { paymentId, externalId, status })
+
+  // Minimal status handling (extend later):
+  // if (status === 'CONFIRMED' && externalId) { /* TODO: finalize cart */ }
 
     // TODO: map status to Medusa payment / order state.
     // If CONFIRMED and externalId => finalize cart: POST /store/carts/:id/complete

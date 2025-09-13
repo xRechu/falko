@@ -1,6 +1,7 @@
-import type { MedusaRequest, MedusaResponse } from '@medusajs/medusa'
+import type { MedusaRequest, MedusaResponse } from '@medusajs/framework'
 import crypto from 'crypto'
-import { calculateRequestSignatureV3, getPaynowBaseUrl } from '../../../modules/paynow/service'
+import { calculateRequestSignatureV3, getPaynowBaseUrl } from 'modules/paynow/service'
+import type { PaynowInitiateBody } from 'modules/paynow/types'
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
@@ -9,7 +10,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const ENV = (process.env.PAYNOW_ENV as 'sandbox' | 'production') || 'sandbox'
     if (!API_KEY || !SIGNATURE_KEY) return res.status(500).json({ error: 'Missing Paynow keys' })
 
-    const { amount, currency = 'PLN', externalId, description, buyer, continueUrl, paymentMethodId, authorizationCode } = req.body || {}
+    const bodyInput = (req as any).body as Partial<PaynowInitiateBody> || {}
+    const { amount, currency = 'PLN', externalId, description, buyer, continueUrl, paymentMethodId, authorizationCode } = bodyInput
     if (!amount || !externalId || !description || !buyer?.email) return res.status(400).json({ error: 'Missing required fields' })
 
     const idempotencyKey = crypto.randomUUID()
