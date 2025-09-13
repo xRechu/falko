@@ -4,14 +4,21 @@
  *
  */
 
+const isProd = process.env.NODE_ENV === 'production'
+const rawMedusa = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
+
+if (isProd && (!rawMedusa || /localhost|127\.0\.0\.1/.test(rawMedusa))) {
+  throw new Error('[API_CONFIG] Brak poprawnej NEXT_PUBLIC_MEDUSA_BACKEND_URL w produkcji (nie może być localhost).')
+}
+
+function normalize(url?: string) {
+  return url ? url.replace(/\/+$/, '') : url
+}
+
 export const API_CONFIG = {
-  // Medusa.js Backend (lokalny serwer, zdalna baza)
-  MEDUSA_BACKEND_URL: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000',
+  MEDUSA_BACKEND_URL: normalize(rawMedusa) || 'http://localhost:9000',
   MEDUSA_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '',
-  
-  // Strapi CMS (lokalny serwer, zdalna baza)
   STRAPI_API_URL: process.env.NEXT_PUBLIC_STRAPI_API_URL || 'http://localhost:1337',
-  // Supabase Storage: usunięte (obrazy hostowane gdzie indziej)
 } as const;
 
 // Eksportuj bezpośrednio dla łatwego dostępu

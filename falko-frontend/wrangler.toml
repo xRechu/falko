@@ -4,8 +4,11 @@ pages_build_output_dir = ".vercel/output/static"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-# Cloudflare Pages runtime env vars (mirror NEXT_PUBLIC_*) if needed
-# MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app"
-# MEDUSA_PUBLISHABLE_KEY = "pk_..."
+## Cloudflare Pages runtime env vars (NEXT_PUBLIC_* are inlined do bundla)
+## UWAGA: Poniższe wartości są publiczne (publishable key). Sekrety admina NIE powinny tu trafiać.
+NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://falko-production.up.railway.app"
+NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = "pk_01J7QF8Z9X8J7QF8Z9X8J7QF8Z"
+
+
 
 # NOTE: Pages ignoruje sekcję [build] w wrangler.toml – build command ustaw w UI (npm run build:cf)
