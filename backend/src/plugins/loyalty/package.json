@@ -1,0 +1,8 @@
+{
+  "name": "@falko/loyalty-local",
+  "version": "0.0.1",
+  "description": "Local loyalty plugin (direct source)",
+  "main": "index.ts",
+  "keywords": ["medusa", "loyalty"],
+  "license": "MIT"
+}
