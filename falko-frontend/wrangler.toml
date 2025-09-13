@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ## Cloudflare Pages runtime env vars (NEXT_PUBLIC_* are inlined do bundla)
 ## UWAGA: Poniższe wartości są publiczne (publishable key). Sekrety admina NIE powinny tu trafiać.
-NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://falko-production.up.railway.app"
+NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app"
 NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = "pk_01J7QF8Z9X8J7QF8Z9X8J7QF8Z"
 
 
