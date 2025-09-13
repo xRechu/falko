@@ -29,6 +29,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Output configuration dla Cloudflare Pages
+  output: 'standalone',
+  
   // Disable ESLint during builds dla produkcji
   eslint: {
     ignoreDuringBuilds: true,
@@ -37,6 +40,13 @@ const nextConfig: NextConfig = {
   // Disable TypeScript checking during builds dla szybszego buildu
   typescript: {
     ignoreBuildErrors: true,
+  },
+  
+  // Wyłączamy webpack cache dla Cloudflare Pages (limit 25MB)
+  webpack: (config, { dev, isServer }) => {
+    // Całkowicie wyłącz cache webpack dla Pages
+    config.cache = false;
+    return config;
   },
   
   images: {
