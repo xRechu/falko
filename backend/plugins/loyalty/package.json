@@ -1,0 +1,15 @@
+{
+  "name": "@falko/loyalty-plugin",
+  "version": "0.1.0",
+  "description": "Loyalty service registration plugin (internal)",
+  "license": "MIT",
+  "main": "index.ts",
+  "keywords": ["medusa-v2", "loyalty", "plugin"],
+  "exports": {
+    "./package.json": "./package.json",
+    "./*": "./.medusa/server/src/*.js"
+  },
+  "peerDependencies": {
+    "@medusajs/framework": "2.x"
+  }
+}
