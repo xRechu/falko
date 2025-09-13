@@ -95,3 +95,14 @@ export const WORKER_MODE =
  * Disable Admin
  */
 export const SHOULD_DISABLE_ADMIN = process.env.MEDUSA_DISABLE_ADMIN === 'true'
+
+/**
+ * Loyalty (feature flag + config)
+ */
+export const LOYALTY_ENABLED = process.env.LOYALTY_POINTS_ENABLED === 'true'
+export const LOYALTY_EARN_RATE = Number(process.env.LOYALTY_EARN_RATE || '0.01') // points per 1 unit currency
+export const LOYALTY_REDEEM_RATE = Number(process.env.LOYALTY_REDEEM_RATE || '0.01') // currency value per point
+export const LOYALTY_MIN_REDEEM = Number(process.env.LOYALTY_MIN_REDEEM || '100')
+export const LOYALTY_MAX_ORDER_COVERAGE = Number(process.env.LOYALTY_MAX_ORDER_COVERAGE || '0.5')
+export const LOYALTY_EXPIRATION_DAYS = Number(process.env.LOYALTY_EXPIRATION_DAYS || '0')
+export const LOYALTY_AWARD_ON_STATUSES = (process.env.LOYALTY_AWARD_ON_STATUSES || 'completed').split(',').map(s => s.trim()).filter(Boolean)

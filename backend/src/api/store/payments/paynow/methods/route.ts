@@ -1,6 +1,6 @@
-import type { MedusaRequest, MedusaResponse } from '@medusajs/medusa'
+import type { MedusaRequest, MedusaResponse } from '@medusajs/framework'
 import crypto from 'crypto'
-import { calculateRequestSignatureV3, getPaynowBaseUrl } from '../../../../modules/paynow/service'
+import { calculateRequestSignatureV3, getPaynowBaseUrl } from 'modules/paynow/service'
 
 export async function GET(_req: MedusaRequest, res: MedusaResponse) {
   try {

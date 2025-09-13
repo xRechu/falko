@@ -2,6 +2,7 @@ import { Modules } from '@medusajs/framework/utils'
 import { INotificationModuleService, IOrderModuleService } from '@medusajs/framework/types'
 import { SubscriberArgs, SubscriberConfig } from '@medusajs/medusa'
 import { EmailTemplates } from '../modules/email-notifications/templates'
+import { LOYALTY_ENABLED } from '../lib/constants'
 
 export default async function orderPlacedHandler({
   event: { data },
@@ -30,6 +31,16 @@ export default async function orderPlacedHandler({
     })
   } catch (error) {
     console.error('Error sending order confirmation notification:', error)
+  }
+
+  if (LOYALTY_ENABLED && order.customer_id) {
+    try {
+      const loyaltyService = container.resolve('loyaltyService') as any
+  const subtotalMinor = (order.items || []).reduce((acc: number, it: any) => acc + (it.subtotal || 0), 0)
+  await loyaltyService.earnPoints(order.customer_id, order.id, subtotalMinor, order.currency_code)
+    } catch (e) {
+      console.warn('[LOYALTY] earnPoints failed', e?.message)
+    }
   }
 }
 
