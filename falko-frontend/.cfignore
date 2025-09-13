@@ -1,0 +1,10 @@
+.next/cache
+cache/
+node_modules/
+.env*
+*.log
+.DS_Store
+.vscode/
+.idea/
+*.spec.ts
+*.test.ts
