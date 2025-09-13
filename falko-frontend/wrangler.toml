@@ -8,5 +8,4 @@ compatibility_flags = ["nodejs_compat"]
 # MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app"
 # MEDUSA_PUBLISHABLE_KEY = "pk_..."
 
-[build]
-command = "npm run build:cf"
+# NOTE: Pages ignoruje sekcję [build] w wrangler.toml – build command ustaw w UI (npm run build:cf)
