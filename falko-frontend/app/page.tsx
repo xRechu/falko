@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from "react";
 import Hero from "@/components/sections/Hero";
 import Features from "@/components/sections/Features";
 import CallToAction from "@/components/sections/CallToAction";

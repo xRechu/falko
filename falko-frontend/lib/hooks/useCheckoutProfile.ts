@@ -64,10 +64,8 @@ export function useCheckoutProfile(): CheckoutProfileHook {
       const response = await getCustomerAddresses();
       if (response.data) {
         setAddresses(response.data);
-        console.log('📋 Loaded user addresses for checkout:', response.data.length);
       }
     } catch (error) {
-      console.error('❌ Error loading addresses for checkout:', error);
       setAddresses([]);
     } finally {
       setIsLoadingAddresses(false);
@@ -123,8 +121,6 @@ export function useCheckoutProfile(): CheckoutProfileHook {
     }
 
     // Domyślne opcje
-    initialData.shippingMethod = 'standard';
-    initialData.paymentMethod = 'card';
     initialData.newsletter = false;
     initialData.terms = false;
     initialData.notes = '';

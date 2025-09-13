@@ -49,6 +49,8 @@ import { CustomerProfile, formatFullName } from '@/lib/api/profile';
 
 type TabType = 'overview' | 'orders' | 'profile' | 'addresses' | 'loyalty' | 'settings';
 
+import { useLoyalty } from '@/lib/context/loyalty-context';
+
 export function AccountPageClient() {
   const { state, logout } = useAuth();
   const router = useRouter();
@@ -569,7 +571,7 @@ function SettingsTab({ onChangePassword }: { onChangePassword: () => void }) {
 }
 
 function LoyaltyTab() {
-  const { tier, nextTier, pointsToNextTier, lifetimeSpent } = (require('@/lib/context/loyalty-context') as any).useLoyalty();
+  const { tier, nextTier, pointsToNextTier, lifetimeSpent } = useLoyalty();
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

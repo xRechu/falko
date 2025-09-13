@@ -19,7 +19,8 @@ import {
   getQualityIssueOptions,
   type OrderEligibility,
   type CreateReturnRequest,
-  type ReturnItem
+  type ReturnItem,
+  type Return
 } from '@/lib/api/returns'
 import { useAuth } from '@/lib/context/auth-context'
 import { Package, Gift, CreditCard, Star, ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react'
@@ -53,7 +54,7 @@ export default function ReturnRequestModal({
   const [description, setDescription] = useState('')
   const [refundMethod, setRefundMethod] = useState<'card' | 'loyalty_points'>('loyalty_points')
   
-  const [createdReturn, setCreatedReturn] = useState<any>(null)
+  const [createdReturn, setCreatedReturn] = useState<Return | null>(null)
 
   useEffect(() => {
     if (isOpen && orderId) {
@@ -79,7 +80,7 @@ export default function ReturnRequestModal({
     }
   }
 
-  const handleItemToggle = (item: any, checked: boolean) => {
+  const handleItemToggle = (item: OrderEligibility['items'][0], checked: boolean) => {
     if (checked) {
       setSelectedItems(prev => [...prev, {
         variant_id: item.variant_id,
@@ -112,9 +113,10 @@ export default function ReturnRequestModal({
       setCurrentStep('confirmation')
       
       toast.success('Zwrot został zgłoszony pomyślnie!')
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Nieznany błąd';
       toast.error('Błąd podczas zgłaszania zwrotu', {
-        description: error.message
+        description: errorMessage
       })
     } finally {
       setLoading(false)

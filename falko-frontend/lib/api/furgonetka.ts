@@ -115,6 +115,7 @@ export interface CreateShipmentResponse {
  * Konfiguracja API Furgonetka
  * W produkcji te klucze powinny być w zmiennych środowiskowych
  */
+const USE_MOCK = process.env.NEXT_PUBLIC_FURGONETKA_USE_MOCK === '1'
 const FURGONETKA_CONFIG = {
   // Używamy lokalnego proxy w development, prawdziwego API w produkcji
   baseUrl: process.env.NODE_ENV === 'development' 
@@ -241,8 +242,8 @@ export async function calculateShippingCosts(
     
     const isApiHealthy = await checkFurgonetkaApiHealth();
     
-    if (!isApiHealthy) {
-      console.warn('⚠️ Furgonetka API niedostępne, używamy mock danych');
+    if (USE_MOCK || !isApiHealthy) {
+      console.warn('⚠️ Furgonetka API niedostępne lub mock włączony, używamy mock danych');
       return {
         success: true,
         options: MOCK_SHIPPING_OPTIONS.map(option => ({
@@ -311,7 +312,7 @@ export async function getPickupPoints(
     
     const isApiHealthy = await checkFurgonetkaApiHealth();
     
-    if (!isApiHealthy) {
+    if (USE_MOCK || !isApiHealthy) {
       // Mock punkty dla InPost
       if (provider === 'InPost') {
         return MOCK_SHIPPING_OPTIONS
@@ -379,7 +380,7 @@ export async function createShipment(
     
     const isApiHealthy = await checkFurgonetkaApiHealth();
     
-    if (!isApiHealthy) {
+    if (USE_MOCK || !isApiHealthy) {
       // Mock response
       const mockShipmentId = `FRG${Date.now()}`;
       console.log('⚠️ Mock utworzenie przesyłki:', mockShipmentId);

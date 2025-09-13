@@ -713,7 +713,7 @@ function GdprNotice({ accepted, onChange }: { accepted: boolean; onChange: (v: b
     const load = async () => {
       try {
         setLoading(true)
-        const res = await fetch('/api/payments/paynow/gdpr', { cache: 'no-store' })
+        const res = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ''}/store/payments/paynow/gdpr`, { cache: 'no-store' })
         if (res.ok) {
           const data = await res.json()
           // Zakładamy strukturę: { title, content }

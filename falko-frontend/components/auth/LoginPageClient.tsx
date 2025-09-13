@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 
 export default function LoginPageClient() {
   const router = useRouter();
-  const { login, isAuthenticated } = useAuth();
+  const { login, state } = useAuth();
   
   // Form state
   const [password, setPassword] = useState('');
@@ -31,7 +31,7 @@ export default function LoginPageClient() {
   
   // Enhanced hooks
   const [email, setEmail] = useState('');
-  const { isValid: isEmailValid, isChecking } = useEmailValidation(email, false); // Disable email validation
+  const { isAvailable, isChecking } = useEmailValidation(email, false);
   const { canSubmit, attempts, isBlocked, timeRemaining, recordAttempt, reset } = useRateLimit('login', {
     maxAttempts: 10, // Zwiększ limit prób
     windowMs: 15 * 60 * 1000, // 15 minut
@@ -46,20 +46,15 @@ export default function LoginPageClient() {
     if (rememberedEmail) {
       setEmail(rememberedEmail);
       setRememberMe(shouldRemember);
-      console.log('📧 Loaded remembered email:', rememberedEmail);
     }
-
-    // Debug: Log rate limit status
-    console.log('🔒 Rate limit status:', { canSubmit, attempts, isBlocked, timeRemaining });
   }, [canSubmit, attempts, isBlocked, timeRemaining]);
   
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      console.log('🔄 User is authenticated, redirecting to /sklep');
+    if (state.isAuthenticated) {
       router.push('/sklep');
     }
-  }, [isAuthenticated, router]);
+  }, [state.isAuthenticated, router]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,8 +79,6 @@ export default function LoginPageClient() {
     setLoading(true);
     
     try {
-      console.log(`🔐 Attempting login with Remember Me: ${rememberMe}`);
-      
       const result = await login(email, password, rememberMe);
       
       if (result.success) {
@@ -93,7 +86,6 @@ export default function LoginPageClient() {
         
         // Log session info for debugging
         const sessionStatus = SessionManager.getSessionStatus();
-        console.log('🎉 Login successful! Session status:', sessionStatus);
         
         router.push('/sklep');
       } else {
@@ -102,12 +94,7 @@ export default function LoginPageClient() {
       }
     } catch (error) {
       recordAttempt();
-      console.error('❌ Login error:', error);
-      console.error('❌ Login error details:', {
-        message: error?.message,
-        stack: error?.stack,
-        name: error?.name
-      });
+      const errorMessage = error instanceof Error ? error.message : 'Nieznany błąd';
       toast.error('Wystąpił błąd podczas logowania');
     } finally {
       setLoading(false);
@@ -278,7 +265,7 @@ export default function LoginPageClient() {
             <div className="mt-6 p-3 bg-muted/50 rounded-lg text-xs">
               <p className="font-medium mb-1 text-foreground">Debug Info:</p>
               <p className="text-foreground/70">Remember Me: {rememberMe ? 'Yes (30 days)' : 'No (session only)'}</p>
-              <p className="text-foreground/70">Email Valid: {isEmailValid ? 'Yes' : 'No'}</p>
+              <p className="text-foreground/70">Email Available: {isAvailable ? 'Yes' : 'No'}</p>
               <p className="text-foreground/70">Rate Limit: {10 - attempts} attempts left</p>
             </div>
           )}

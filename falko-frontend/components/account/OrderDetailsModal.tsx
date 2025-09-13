@@ -63,7 +63,6 @@ export function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
   const eligibility = await checkReturnEligibility(orderDetails.id, state.user?.id);
       setReturnEligible(eligibility.eligible);
     } catch (error) {
-      console.error('Error checking return eligibility:', error);
       setReturnEligible(false);
     } finally {
       setCheckingEligibility(false);

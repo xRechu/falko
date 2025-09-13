@@ -34,7 +34,7 @@ function groupToProductPreviews(items: SearchItem[]): ProductPreview[] {
       handle: best.handle,
       thumbnail: best.thumbnail || undefined,
       price: best.min_price != null ? { amount: best.min_price, currency_code: 'pln' } : undefined,
-      firstVariant: { id: best.variant_id, title: best.variant_title, prices: best.min_price != null ? [{ id: 'tmp', amount: best.min_price, currency_code: 'pln' }] as any : [] },
+      firstVariant: { id: best.variant_id, title: best.variant_title, prices: best.min_price != null ? [{ id: 'tmp', amount: best.min_price, currency_code: 'pln' }] : [] },
       variantCount: variants.length,
     })
   }
@@ -51,7 +51,7 @@ function getParamsFromSearch(sp: URLSearchParams) {
     .filter(Boolean)
   const price_min = sp.get('price_min') ? Number(sp.get('price_min')) : undefined
   const price_max = sp.get('price_max') ? Number(sp.get('price_max')) : undefined
-  const sort = (sp.get('sort') as any) || undefined
+  const sort = sp.get('sort') as 'relevance' | 'price_asc' | 'price_desc' | 'created_at_asc' | 'created_at_desc' | undefined
   const page = sp.get('page') ? Number(sp.get('page')) : 1
   const limit = sp.get('limit') ? Number(sp.get('limit')) : 24
   return { q, category, sizes, price_min, price_max, sort, page, limit }
@@ -92,8 +92,9 @@ export default function ShopPageClient() {
         const params = getParamsFromSearch(searchParams)
         const res = await searchProducts(params)
         if (!cancelled) setResponse(res)
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || 'Błąd wyszukiwania')
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'Błąd wyszukiwania';
+        if (!cancelled) setError(errorMessage)
       } finally {
         if (!cancelled) setLoading(false)
       }
