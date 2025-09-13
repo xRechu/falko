@@ -1,8 +1,8 @@
 // Loyalty plugin: ensures tables exist (idempotent) and registers LoyaltyService
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { asClass } = require('awilix')
-import LoyaltyService from '../../modules/loyalty/service'
-import { LOYALTY_ENABLED } from '../../lib/constants'
+import LoyaltyService from 'modules/loyalty/service'
+import { LOYALTY_ENABLED } from 'lib/constants'
 
 async function ensureTables(container: any) {
   if (!LOYALTY_ENABLED) return
