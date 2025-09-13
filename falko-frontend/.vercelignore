@@ -1,0 +1,7 @@
+# Cloudflare Pages ignore file
+.next/cache
+cache
+node_modules
+.env*
+*.log
+.DS_Store

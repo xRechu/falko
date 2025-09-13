@@ -29,8 +29,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Output configuration dla Cloudflare Pages
-  output: 'standalone',
+  // Konfiguracja dla Cloudflare Pages
+  trailingSlash: false,
+  skipTrailingSlashRedirect: true,
   
   // Disable ESLint during builds dla produkcji
   eslint: {
@@ -46,6 +47,12 @@ const nextConfig: NextConfig = {
   webpack: (config, { dev, isServer }) => {
     // Całkowicie wyłącz cache webpack dla Pages
     config.cache = false;
+    
+    // Dodatkowo wyłącz inne opcje cache
+    if (config.optimization) {
+      config.optimization.splitChunks = false;
+    }
+    
     return config;
   },
   
