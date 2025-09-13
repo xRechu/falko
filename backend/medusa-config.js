@@ -113,9 +113,9 @@ const medusaConfig = {
   ],
   plugins: [
     // Paynow plugin is implemented as store API routes and module in src/, no external resolve needed.
-    // Loyalty plugin (directly from src - no external shim)
+    // Loyalty plugin via shim (Railway resolution stability)
     {
-      resolve: './src/plugins/loyalty',
+      resolve: './plugins/loyalty',
       options: {}
     },
     {

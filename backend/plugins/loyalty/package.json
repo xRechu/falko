@@ -1,6 +1,13 @@
 {
   "name": "@falko/loyalty-plugin",
   "version": "0.1.0",
+  "description": "Loyalty plugin shim (re-exports src implementation)",
+  "main": "index.ts",
+  "license": "MIT"
+}
+{
+  "name": "@falko/loyalty-plugin",
+  "version": "0.1.0",
   "description": "Loyalty service registration plugin (internal)",
   "license": "MIT",
   "main": "index.ts",
