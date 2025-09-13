@@ -29,7 +29,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Konfiguracja dla Cloudflare Pages
+  // Standardowa konfiguracja dla Cloudflare Pages
   trailingSlash: false,
   skipTrailingSlashRedirect: true,
   
