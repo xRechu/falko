@@ -1,5 +1,7 @@
 name = "falko-frontend"
 compatibility_date = "2025-09-13"
+pages_build_output_dir = ".vercel/output/static"
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
 # Cloudflare Pages runtime env vars (mirror NEXT_PUBLIC_*) if needed
