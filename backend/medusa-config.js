@@ -112,6 +112,12 @@ const medusaConfig = {
     // Brak Stripe/Payment providers na tym etapie (użyjemy Paynow plugin później)
   ],
   plugins: [
+    // Paynow plugin is implemented as store API routes and module in src/, no external resolve needed.
+    // Loyalty plugin registers LoyaltyService in DI
+    {
+      resolve: './plugins/loyalty',
+      options: {}
+    },
     {
       resolve: './plugins/furgonetka',
       options: {
