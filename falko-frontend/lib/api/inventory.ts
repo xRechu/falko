@@ -1,4 +1,5 @@
 import { medusaClient, handleApiError, withRetry } from '@/lib/medusa-client';
+import { API_CONFIG } from '@/lib/api-config';
 import { ApiResponse } from './products';
 
 /**
@@ -24,13 +25,13 @@ export async function fetchInventoryData(): Promise<ApiResponse<InventoryRespons
     
     const response = await withRetry(async () => {
       // Używamy custom endpointu, który stworzyliśmy w backendzie
-      const url = `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/inventory`;
+      const url = `${API_CONFIG.MEDUSA_BACKEND_URL}/store/inventory`;
       
       const res = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '',
+          'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
         },
       });
       

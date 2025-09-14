@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-  "build:cf": "next build && npx @cloudflare/next-on-pages",
+    "build:cf": "NODE_ENV=production next build && npx @cloudflare/next-on-pages",
     "start": "next start",
     "lint": "next lint"
   },

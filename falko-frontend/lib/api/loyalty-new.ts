@@ -3,6 +3,8 @@
  * Includes fallback to mock data when backend is unavailable
  */
 
+import { API_CONFIG } from '@/lib/api-config';
+
 export interface LoyaltyPointsResponse {
   points: number;
   history: LoyaltyTransactionResponse[];
@@ -44,7 +46,7 @@ export interface RedeemRewardResponse {
  */
 async function checkBackendHealth(): Promise<boolean> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/health`, {
+    const response = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/health`, {
       method: 'GET',
       signal: AbortSignal.timeout(3000),
     });
@@ -69,11 +71,12 @@ export async function fetchCustomerLoyaltyPoints(): Promise<LoyaltyPointsRespons
       return fallbackToMockLoyaltyData();
     }
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/loyalty/points`, {
+    const response = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/store/loyalty/points`, {
       method: 'GET',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
       },
       signal: AbortSignal.timeout(5000),
     });
@@ -107,11 +110,12 @@ export async function fetchLoyaltyRewards(): Promise<LoyaltyRewardResponse[]> {
       return fallbackToMockRewards();
     }
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/loyalty/rewards`, {
+    const response = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/store/loyalty/rewards`, {
       method: 'GET',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
       },
       signal: AbortSignal.timeout(5000),
     });
@@ -145,11 +149,12 @@ export async function redeemLoyaltyReward(rewardId: string): Promise<RedeemRewar
       return simulateRewardRedemption(rewardId);
     }
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/loyalty/redeem`, {
+    const response = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/store/loyalty/redeem`, {
       method: 'POST',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
       },
       body: JSON.stringify({ reward_id: rewardId }),
       signal: AbortSignal.timeout(10000),
@@ -184,11 +189,12 @@ export async function addPointsForOrder(orderId: string, orderTotal: number): Pr
       return true; // Symuluj sukces
     }
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/loyalty/add-points`, {
+    const response = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/store/loyalty/add-points`, {
       method: 'POST',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
       },
       body: JSON.stringify({ 
         order_id: orderId,

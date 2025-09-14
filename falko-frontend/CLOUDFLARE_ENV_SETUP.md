@@ -1,4 +1,32 @@
-# Cloudflare Pages - Prawidłowa Konfiguracja Zmiennych Środowiskowych
+## PILNE - Cloudflare Pages Build Failure Fix
+
+### Błąd:
+```
+[Error: Failed to collect configuration for /login] {
+  [cause]: Error: [API_CONFIG] Brak poprawnej NEXT_PUBLIC_MEDUSA_BACKEND_URL w produkcji
+```
+
+### Fix - Ustaw w Cloudflare Dashboard:
+
+1. **Idź do Cloudflare Dashboard:**
+   ```
+   https://dash.cloudflare.com/[account]/pages/[project]/settings/environment-variables
+   ```
+
+2. **Dodaj Production Environment Variables:**
+   ```
+   NEXT_PUBLIC_MEDUSA_BACKEND_URL = https://backend-server-production-030d.up.railway.app
+   NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = pk_01J7QF8Z9X8J7QF8Z9X8J7QF8Z
+   ```
+
+3. **WAŻNE - Deploy ponownie:**
+   - Pages > Deployments > "Retry deployment"
+   - Lub push nowy commit
+
+### Dlaczego się nie udało:
+- Cloudflare Pages potrzebuje env vars z Dashboard **podczas buildu**
+- `wrangler.toml [vars]` działają tylko w runtime
+- Build czyta zmienne z Dashboard, nie z repo
 
 ## Problem
 - `NEXT_PUBLIC_*` zmienne muszą być dostępne podczas **BUILD TIME** (Next.js je inline'uje)

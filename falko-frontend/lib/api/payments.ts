@@ -43,9 +43,12 @@ export async function createPayment(paymentData: PaymentRequest): Promise<Paymen
   if (paymentData.authorization_code) body.authorizationCode = paymentData.authorization_code
 
   // Wywołujemy nasz route do Paynow initiate
-  const res = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ''}/store/payments/paynow/initiate`, {
+  const res = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/store/payments/paynow/initiate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
+    },
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -69,13 +72,23 @@ export async function checkPaymentStatus(orderId: string): Promise<PaymentStatus
 }
 
 export async function getPaynowMethods() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ''}/store/payments/paynow/methods`, { cache: 'no-store' })
+  const res = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/store/payments/paynow/methods`, { 
+    cache: 'no-store',
+    headers: {
+      'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
+    }
+  })
   if (!res.ok) throw new Error('Nie udało się pobrać metod płatności')
   return res.json()
 }
 
 export async function getPaynowGdpr() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ''}/store/payments/paynow/gdpr`, { cache: 'no-store' })
+  const res = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/store/payments/paynow/gdpr`, { 
+    cache: 'no-store',
+    headers: {
+      'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
+    }
+  })
   if (!res.ok) throw new Error('Nie udało się pobrać klauzul RODO')
   return res.json()
 }

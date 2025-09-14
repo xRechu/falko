@@ -36,7 +36,12 @@ export function useInventory() {
   };
 
   useEffect(() => {
-    loadInventory();
+    const enabled = process.env.NEXT_PUBLIC_FEATURES_INVENTORY !== '0'
+    if (enabled) {
+      loadInventory();
+    } else {
+      setIsLoading(false)
+    }
   }, []);
 
   const getInventoryForVariant = (variantId: string): InventoryData | null => {

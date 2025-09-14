@@ -36,7 +36,12 @@ export function usePrices() {
   };
 
   useEffect(() => {
-    loadPrices();
+    const enabled = process.env.NEXT_PUBLIC_FEATURES_PRICING !== '0'
+    if (enabled) {
+      loadPrices();
+    } else {
+      setIsLoading(false)
+    }
   }, []);
 
   /**

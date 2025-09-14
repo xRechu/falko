@@ -1,3 +1,5 @@
+import { API_CONFIG } from '../api-config';
+
 export type SearchFacets = {
   categories: { id: string; name?: string; count: number }[]
   sizes: { size: string; count: number }[]
@@ -33,10 +35,10 @@ export async function searchProducts(params: {
   limit?: number
   currency?: string
 }) {
-  const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
-  const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
-  if (!baseUrl) throw new Error('Search failed: missing NEXT_PUBLIC_MEDUSA_BACKEND_URL')
-  if (!pubKey) throw new Error('Search failed: missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY')
+  const baseUrl = API_CONFIG.MEDUSA_BACKEND_URL
+  const pubKey = API_CONFIG.MEDUSA_PUBLISHABLE_KEY
+  if (!baseUrl) throw new Error('Search failed: missing MEDUSA_BACKEND_URL')
+  if (!pubKey) throw new Error('Search failed: missing MEDUSA_PUBLISHABLE_KEY')
 
   const makeUrl = (p: typeof params) => {
     const url = new URL(`${baseUrl}/store/search/products`)
@@ -86,8 +88,8 @@ export async function searchProducts(params: {
 
 export async function searchSuggest(q: string, limit = 8): Promise<Suggestion[]> {
   if (!q) return []
-  const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
-  const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  const baseUrl = API_CONFIG.MEDUSA_BACKEND_URL
+  const pubKey = API_CONFIG.MEDUSA_PUBLISHABLE_KEY
   if (!baseUrl || !pubKey) return []
 
   const url = new URL(`${baseUrl}/store/search/suggest`)
