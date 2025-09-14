@@ -1,5 +1,4 @@
-import { NextFunction } from 'express';
-import { MedusaRequest, MedusaResponse } from '@medusajs/framework';
+import { MedusaRequest, MedusaResponse, MedusaNextFunction } from '@medusajs/framework';
 
 /**
  * CORS middleware for enhanced cookie support
@@ -8,7 +7,7 @@ import { MedusaRequest, MedusaResponse } from '@medusajs/framework';
 export function corsMiddleware(
   req: MedusaRequest,
   res: MedusaResponse,
-  next: NextFunction
+  next: MedusaNextFunction
 ): void {
   // Get origin from request
   const origin = req.headers.origin as string;
