@@ -75,43 +75,35 @@ export async function registerCustomer(userData: RegisterRequest): Promise<ApiRe
   try {
     console.log('🔄 Registering customer via SDK:', userData.email);
     
-    // Rejestracja w systemie auth przez SDK
-    const authToken = await sdk.auth.register("customer", "emailpass", {
+    // Krok 1: Rejestracja konta auth
+    const authResult = await sdk.auth.register("customer", "emailpass", {
       email: userData.email,
       password: userData.password,
     });
-
-    // Po udanej rejestracji, utwórz profil klienta przez SDK
-    if (authToken) {
-      try {
-        const customerResponse = await sdk.store.customer.create({
-          email: userData.email,
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          phone: userData.phone,
-        });
-        
-        console.log('✅ Customer registered and profile created successfully via SDK');
-        return { 
-          data: { 
-            customer: customerResponse.customer as Customer
-          } 
-        };
-      } catch (profileError) {
-        console.warn('Customer registered but profile creation failed:', profileError);
-        // Spróbuj pobrać dane customera jeśli tworzenie profilu nie powiodło się
-        try {
-          const customerResponse = await sdk.store.customer.retrieve();
-          return { data: { customer: customerResponse.customer as Customer } };
-        } catch {
-          // Zwróć mock customer jeśli nic nie działa
-          return { data: { customer: { id: 'new_customer', email: userData.email, has_account: true } as Customer } };
-        }
-      }
-    }
-
-    console.log('✅ Customer registered successfully');
-    return { data: { customer: { id: 'new_customer', email: userData.email, has_account: true } as Customer } };
+    
+    console.log('✅ Auth registration successful');
+    
+    // Krok 2: Logowanie żeby uzyskać sesję
+    await sdk.auth.login("customer", "emailpass", {
+      email: userData.email,
+      password: userData.password,
+    });
+    
+    console.log('✅ Auto-login after registration successful');
+    
+    // Krok 3: Aktualizacja profilu customera (imię, nazwisko)
+    const customerResponse = await sdk.store.customer.update({
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      phone: userData.phone,
+    });
+    
+    console.log('✅ Customer profile updated with personal data');
+    return { 
+      data: { 
+        customer: customerResponse.customer as Customer
+      } 
+    };
   } catch (error: any) {
     console.error('❌ registerCustomer error:', error);
     return { 

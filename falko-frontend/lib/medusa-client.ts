@@ -23,17 +23,35 @@ export const sdk = new Medusa({
   publishableKey: API_CONFIG.MEDUSA_PUBLISHABLE_KEY,
   debug: process.env.NODE_ENV === 'development',
   auth: {
-    // ZMIANA: przechodzimy na sesje cookie zamiast erzac JWT
+    // ZMIANA: przechodzimy na sesje cookie zamiast JWT
     type: 'session'
+  },
+  // Dodanie globalnej konfiguracji fetch
+  globalHeaders: {
+    'Content-Type': 'application/json',
   }
 });
 
 // Wymuś wysyłanie cookies (sesji) przy każdym request
 try {
-  (sdk as any).client.config.fetchOptions = {
-    ...((sdk as any).client.config.fetchOptions || {}),
-    credentials: 'include'
+  // Ustawienie credentials dla wszystkich requestów
+  const originalFetch = (sdk as any).client.request.bind((sdk as any).client);
+  
+  (sdk as any).client.request = async (path: string, options: RequestInit = {}) => {
+    const enhancedOptions = {
+      ...options,
+      credentials: 'include' as RequestCredentials,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    };
+    
+    console.log(`🌐 SDK Request to: ${path}`, enhancedOptions);
+    
+    return originalFetch(path, enhancedOptions);
   };
+  
   console.log('✅ SDK fetch credentials=include ustawione');
 } catch (e) {
   console.warn('⚠️ Nie udało się ustawić credentials=include', e);
