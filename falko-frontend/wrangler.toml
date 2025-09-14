@@ -1,7 +1,7 @@
 name = "falko"
 compatibility_date = "2025-09-13"
 pages_build_output_dir = ".vercel/output/static"
-compatibility_flags = ["nodejs_compat_populate_process_env"]
+compatibility_flags = ["nodejs_compat", "streams_enable_constructors"]
 
 # Environment variables dla build-time (dostępne podczas next build)
 [vars]
