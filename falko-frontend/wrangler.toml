@@ -1,19 +1,19 @@
 name = "falko"
 compatibility_date = "2025-09-13"
 pages_build_output_dir = ".vercel/output/static"
-compatibility_flags = ["nodejs_compat", "streams_enable_constructors"]
+compatibility_flags = ["nodejs_compat"]
 
 # Environment variables dla build-time (dostępne podczas next build)
 [vars]
 NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app"  
-NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = "pk_01J7QF8Z9X8J7QF8Z9X8J7QF8Z"
+NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = "pk_632110d4efe86eaab2fe4a48f2cabbbbdc7617faf602fa68d7322123190109ad"
 
 # Environment-specific overrides (opcjonalnie)
 [env.preview]
 vars = { NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app" }
 
 [env.production] 
-vars = { NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app", NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = "pk_01J7QF8Z9X8J7QF8Z9X8J7QF8Z" }
+vars = { NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app", NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = "pk_632110d4efe86eaab2fe4a48f2cabbbbdc7617faf602fa68d7322123190109ad" }
 
 
 
