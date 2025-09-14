@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { API_CONFIG } from '@/lib/api-config';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle, CheckCircle, Wifi, WifiOff, Database, Server } from 'lucide-react';
@@ -20,7 +21,14 @@ export function LoyaltyConnectionStatus() {
     try {
       console.log('🔍 Checking backend connection...');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'}/health`, {
+      const baseURL = API_CONFIG.MEDUSA_BACKEND_URL;
+      if (!baseURL) {
+        console.warn('⚠️ Brak MEDUSA_BACKEND_URL – pomijam sprawdzenie backendu');
+        setBackendStatus('disconnected');
+        setLastCheck(new Date());
+        return;
+      }
+      const response = await fetch(`${baseURL}/health`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000),
       });

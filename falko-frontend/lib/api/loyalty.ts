@@ -2,6 +2,7 @@
  * Loyalty API Service Layer for Medusa.js 2.0 Integration
  * Includes fallback to mock data when backend is unavailable
  */
+import { API_CONFIG, MEDUSA_PUBLISHABLE_KEY } from '../api-config'
 
 export interface LoyaltyPointsResponse {
   points: number;
@@ -44,8 +45,12 @@ export interface RedeemRewardResponse {
  */
 async function checkBackendHealth(): Promise<boolean> {
   try {
-    const baseURL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
+    const baseURL = API_CONFIG.MEDUSA_BACKEND_URL;
+    const publishableKey = MEDUSA_PUBLISHABLE_KEY;
+    if (!baseURL) {
+      console.warn('⚠️ Brak MEDUSA_BACKEND_URL – health check pominięty');
+      return false;
+    }
     
     // Use loyalty rewards endpoint as health check since it has proper CORS
     const response = await fetch(`${baseURL}/store/loyalty/rewards`, {
@@ -74,8 +79,12 @@ export async function fetchCustomerLoyaltyPoints(): Promise<LoyaltyPointsRespons
   try {
     console.log('🔄 Fetching customer loyalty points...');
     
-    const baseURL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
+    const baseURL = API_CONFIG.MEDUSA_BACKEND_URL;
+    const publishableKey = MEDUSA_PUBLISHABLE_KEY;
+    if (!baseURL) {
+      console.warn('⚠️ Brak MEDUSA_BACKEND_URL – zwracam pusty stan lojalności');
+      return { points: 0, history: [] };
+    }
 
     // Produkcja: bez mocków – jeśli API padnie, zwróć pusty stan
     const pointsRes = await fetch(`${baseURL}/store/loyalty/points`, {
@@ -126,8 +135,12 @@ export async function fetchLoyaltyRewards(): Promise<LoyaltyRewardResponse[]> {
   try {
     console.log('🔄 Fetching loyalty rewards...');
     
-    const baseURL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
+    const baseURL = API_CONFIG.MEDUSA_BACKEND_URL;
+    const publishableKey = MEDUSA_PUBLISHABLE_KEY;
+    if (!baseURL) {
+      console.warn('⚠️ Brak MEDUSA_BACKEND_URL – zwracam mock rewards (dev) / pustą listę (prod)');
+      return process.env.NODE_ENV === 'production' ? [] : fallbackToMockRewards();
+    }
     
     const response = await fetch(`${baseURL}/store/loyalty/rewards`, {
       method: 'GET',
@@ -171,8 +184,12 @@ export async function redeemLoyaltyReward(rewardId: string): Promise<RedeemRewar
       return simulateRewardRedemption(rewardId);
     }
     
-    const baseURL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
+    const baseURL = API_CONFIG.MEDUSA_BACKEND_URL;
+    const publishableKey = MEDUSA_PUBLISHABLE_KEY;
+    if (!baseURL) {
+      console.warn('⚠️ Brak MEDUSA_BACKEND_URL – symuluję redeem');
+      return simulateRewardRedemption(rewardId);
+    }
     
     // Mock customer ID for development
     const customerId = 'customer_01J3K2M9N0P1Q2R3S4T5U6';
@@ -218,8 +235,12 @@ export async function addPointsForOrder(orderId: string, orderTotal: number): Pr
       return true; // Symuluj sukces
     }
     
-    const baseURL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-    const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
+    const baseURL = API_CONFIG.MEDUSA_BACKEND_URL;
+    const publishableKey = MEDUSA_PUBLISHABLE_KEY;
+    if (!baseURL) {
+      console.warn('⚠️ Brak MEDUSA_BACKEND_URL – punktów nie dodano');
+      return false;
+    }
     
     const response = await fetch(`${baseURL}/store/loyalty/add-points`, {
       method: 'POST',
