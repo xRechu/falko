@@ -2,6 +2,7 @@ import { API_CONFIG } from '@/lib/api-config';
 import { ApiResponse } from './products';
 import { sdk } from '@/lib/medusa-client';
 import TokenManager from '@/lib/token-manager';
+import { loginDirectAPI, getCustomerDirectAPI, logoutDirectAPI } from './auth-direct';
 import type { HttpTypes } from "@medusajs/types";
 
 /**
@@ -28,40 +29,49 @@ export interface RegisterRequest {
 }
 
 /**
- * Logowanie użytkownika (Medusa 2.0 SDK) 
- * Używa sdk.auth.login() zamiast bezpośredniego fetch
+ * Logowanie użytkownika (Medusa 2.0 SDK with Direct API fallback)
  */
 export async function loginCustomer(credentials: LoginRequest, rememberMe: boolean = false): Promise<ApiResponse<{ customer: Customer }>> {
   try {
-    console.log('🔄 Logging in customer via SDK (session mode):', credentials.email);
+    console.log('🔄 [Hybrid Auth] Attempting SDK login first:', credentials.email);
+    
+    // Try SDK first
+    try {
+      const response = await sdk.auth.login("customer", "emailpass", {
+        email: credentials.email,
+        password: credentials.password,
+      });
 
-    const response = await sdk.auth.login("customer", "emailpass", {
-      email: credentials.email,
-      password: credentials.password,
-    });
+      console.log('✅ SDK login successful');
 
-    console.log('✅ SDK login raw response keys:', Object.keys(response || {}));
+      // Set remember me preferences
+      if (rememberMe) {
+        localStorage.setItem('auth_remember', 'true');
+        localStorage.setItem('remembered_email', credentials.email);
+      } else {
+        localStorage.removeItem('auth_remember');
+        localStorage.removeItem('remembered_email');
+      }
 
-    // NIE generujemy fake tokenów – polegamy na cookie sesyjnym
-    if (rememberMe) {
-      localStorage.setItem('auth_remember', 'true');
-      localStorage.setItem('remembered_email', credentials.email);
-    } else {
-      localStorage.removeItem('auth_remember');
-      localStorage.removeItem('remembered_email');
+      // Get customer data after successful login
+      const customerResponse = await sdk.store.customer.retrieve();
+      console.log('✅ Customer data retrieved via SDK:', customerResponse.customer?.email);
+
+      return { data: { customer: customerResponse.customer as Customer } };
+      
+    } catch (sdkError: any) {
+      console.log('❌ SDK login failed, trying direct API fallback:', sdkError.message);
+      
+      // Fallback to direct API call
+      return await loginDirectAPI(credentials, rememberMe);
     }
-
-    // Po zalogowaniu pobierz aktualne dane klienta
-    const customerResponse = await sdk.store.customer.retrieve();
-    console.log('✅ Customer data retrieved (session):', customerResponse.customer?.email);
-
-    return { data: { customer: customerResponse.customer as Customer } };
+    
   } catch (error: any) {
-    console.error('❌ loginCustomer SDK error:', error);
+    console.error('❌ [Hybrid Auth] All login methods failed:', error);
     return {
       error: {
         message: error.message || 'Błąd logowania',
-        status: 400
+        status: 401
       }
     };
   }
@@ -115,33 +125,39 @@ export async function registerCustomer(userData: RegisterRequest): Promise<ApiRe
 }
 
 /**
- * Pobiera dane zalogowanego użytkownika (Medusa 2.0 SDK)
+ * Pobiera dane zalogowanego użytkownika (Medusa 2.0 SDK with Direct API fallback)
  */
 export async function getCustomer(): Promise<ApiResponse<Customer>> {
   try {
-    console.log('🔄 [JS SDK] getCustomer - Fetching customer data...');
+    console.log('🔄 [Hybrid Auth] Getting customer data...');
     
-    // Najpierw sprawdźmy czy SDK ma automatyczną autoryzację
+    // Try SDK first
     try {
       const response = await sdk.store.customer.retrieve();
       if (response.customer) {
-        console.log('✅ SDK has automatic authorization, customer data:', response.customer);
+        console.log('✅ SDK customer data retrieved:', response.customer?.email);
         return { data: response.customer as Customer };
       }
-      throw new Error('No customer data returned');
-    } catch (authError) {
-      console.log('❌ SDK does not have automatic authorization, trying manual token management...');
-      console.log('Auth error:', authError);
+      throw new Error('No customer data returned from SDK');
+    } catch (sdkError: any) {
+      console.log('❌ SDK failed, trying manual token management...', sdkError.message);
       
-      // Fallback: użyj ręcznego zarządzania tokenami
-      return await getCustomerWithManualToken();
+      // Try with manual token
+      try {
+        return await getCustomerWithManualToken();
+      } catch (tokenError: any) {
+        console.log('❌ Manual token failed, trying direct API fallback...', tokenError.message);
+        
+        // Final fallback: direct API call
+        return await getCustomerDirectAPI();
+      }
     }
   } catch (error: any) {
-    console.error('❌ [JS SDK] getCustomer error:', error);
+    console.error('❌ [Hybrid Auth] All customer retrieval methods failed:', error);
     return { 
       error: { 
         message: error.message || 'Błąd pobierania danych użytkownika',
-        status: error.status || 401 
+        status: 401 
       } 
     };
   }
@@ -179,19 +195,33 @@ async function getCustomerWithManualToken(): Promise<ApiResponse<Customer>> {
 }
 
 /**
- * Wylogowanie użytkownika (Medusa 2.0 SDK)
+ * Wylogowanie użytkownika (Medusa 2.0 SDK with Direct API fallback)
  */
 export async function logoutCustomer(): Promise<ApiResponse<void>> {
   try {
-    console.log('🔄 Logging out customer via SDK...');
+    console.log('🔄 [Hybrid Auth] Logging out customer...');
     
-    await sdk.auth.logout();
+    // Try SDK first
+    try {
+      await sdk.auth.logout();
+      console.log('✅ SDK logout successful');
+    } catch (sdkError: any) {
+      console.log('❌ SDK logout failed, trying direct API fallback:', sdkError.message);
+      
+      // Fallback to direct API call
+      await logoutDirectAPI();
+    }
 
-    console.log('✅ Customer logged out successfully via SDK');
+    // Clean up local storage regardless of API success
+    localStorage.removeItem('auth_remember');
+    localStorage.removeItem('remembered_email');
+    
     return { data: undefined };
   } catch (error: any) {
-    console.error('❌ logoutCustomer SDK error:', error);
-    // Wyloguj lokalnie nawet jeśli API call failed
+    console.error('❌ logoutCustomer error:', error);
+    // Always clean up locally even if API calls failed
+    localStorage.removeItem('auth_remember');
+    localStorage.removeItem('remembered_email');
     return { data: undefined };
   }
 }

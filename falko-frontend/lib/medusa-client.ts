@@ -23,10 +23,9 @@ export const sdk = new Medusa({
   publishableKey: API_CONFIG.MEDUSA_PUBLISHABLE_KEY,
   debug: process.env.NODE_ENV === 'development',
   auth: {
-    // ZMIANA: przechodzimy na sesje cookie zamiast JWT
-    type: 'session'
+    type: 'jwt'
   },
-  // Dodanie globalnej konfiguracji fetch
+  // Dodanie globalnej konfiguracji fetch  
   globalHeaders: {
     'Content-Type': 'application/json',
   }
