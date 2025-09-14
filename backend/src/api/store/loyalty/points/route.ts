@@ -2,6 +2,16 @@ import type { MedusaRequest, MedusaResponse } from '@medusajs/framework'
 import { LOYALTY_ENABLED } from '../../../../lib/constants'
 import LoyaltyService from '../../../../modules/loyalty/service'
 
+export const OPTIONS = async (_req: MedusaRequest, res: MedusaResponse) => {
+  const origins = process.env.STORE_CORS?.split(',').map(o=>o.trim()).filter(Boolean)
+  const origin = origins?.[0] || '*'
+  res.setHeader('Access-Control-Allow-Origin', origin)
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-publishable-api-key')
+  res.setHeader('Access-Control-Allow-Credentials', 'true')
+  return res.status(200).end()
+}
+
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   if (!LOYALTY_ENABLED) {
     return res.status(404).json({ message: 'Not found' })
