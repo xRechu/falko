@@ -8,38 +8,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
-import { SearchItem, SearchResponse, searchProducts, searchSuggest } from '@/lib/api/search'
+import { fetchProductsFromAPI } from '@/lib/api/products'
 import type { ProductPreview } from '@/lib/types/product'
 import { SearchBar } from '@/components/ui/search-bar'
-
-// Pomocniczo: grupowanie wyników (wariantów) do unikalnych produktów dla ProductCard
-function groupToProductPreviews(items: SearchItem[]): ProductPreview[] {
-  const byProduct = new Map<string, SearchItem[]>()
-  for (const it of items) {
-    const arr = byProduct.get(it.product_id) || []
-    arr.push(it)
-    byProduct.set(it.product_id, arr)
-  }
-  const previews: ProductPreview[] = []
-  for (const [_, variants] of byProduct.entries()) {
-    // wybierz najtańszy wariant jako reprezentanta
-    const best = variants.reduce((a, b) => {
-      const av = a.min_price ?? Number.MAX_SAFE_INTEGER
-      const bv = b.min_price ?? Number.MAX_SAFE_INTEGER
-      return av <= bv ? a : b
-    })
-    previews.push({
-      id: best.product_id,
-      title: best.title,
-      handle: best.handle,
-      thumbnail: best.thumbnail || undefined,
-      price: best.min_price != null ? { amount: best.min_price, currency_code: 'pln' } : undefined,
-      firstVariant: { id: best.variant_id, title: best.variant_title, prices: best.min_price != null ? [{ id: 'tmp', amount: best.min_price, currency_code: 'pln' }] : [] },
-      variantCount: variants.length,
-    })
-  }
-  return previews
-}
 
 // Parsowanie search params -> obiekt parametrów dla API
 function getParamsFromSearch(sp: URLSearchParams) {
@@ -63,7 +34,8 @@ export default function ShopPageClient() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [response, setResponse] = useState<SearchResponse | null>(null)
+  const [response, setResponse] = useState<ProductPreview[] | null>(null)
+  const [totalCount, setTotalCount] = useState(0)
 
   // Sterowanie inputem wyszukiwania + podpowiedzi
   const [qInput, setQInput] = useState('')
@@ -90,8 +62,19 @@ export default function ShopPageClient() {
       setError(null)
       try {
         const params = getParamsFromSearch(searchParams)
-        const res = await searchProducts(params)
-        if (!cancelled) setResponse(res)
+        const result = await fetchProductsFromAPI({
+          limit: params.limit,
+          offset: ((params.page || 1) - 1) * (params.limit || 24)
+        })
+        
+        if (!cancelled) {
+          if (result.data) {
+            setResponse(result.data)
+            setTotalCount(result.data.length) // Dla uproszczenia - w rzeczywistości Medusa powinno zwrócić count
+          } else if (result.error) {
+            setError(result.error.message || 'Błąd pobierania produktów')
+          }
+        }
       } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'Błąd wyszukiwania';
         if (!cancelled) setError(errorMessage)
@@ -105,7 +88,8 @@ export default function ShopPageClient() {
     }
   }, [searchParams])
 
-  // Debounce podpowiedzi
+  // Debounce podpowiedzi - tymczasowo wyłączone dla uproszczenia
+  /*
   useEffect(() => {
     if (suggestTimeout.current) clearTimeout(suggestTimeout.current)
     if (!qInput || qInput.length < 2) {
@@ -124,6 +108,7 @@ export default function ShopPageClient() {
       if (suggestTimeout.current) clearTimeout(suggestTimeout.current)
     }
   }, [qInput])
+  */
 
   // Helper do aktualizacji URL query
   const updateQuery = (mutate: (sp: URLSearchParams) => void, { scroll = false } = {}) => {
@@ -139,12 +124,14 @@ export default function ShopPageClient() {
   const params = useMemo(() => getParamsFromSearch(searchParams), [searchParams])
 
   // Posprzątane dane dla UI
-  const productPreviews = useMemo(() => groupToProductPreviews(response?.items || []), [response])
-  const total = response?.pagination.total || 0
+  const productPreviews = useMemo(() => response || [], [response])
+  const total = totalCount
   const page = params.page || 1
   const limit = params.limit || 24
   const totalPages = Math.max(1, Math.ceil(total / limit))
-  const facets = response?.facets
+  
+  // Tymczasowo brak facets (kategorii, rozmiarów) - to wymaga dodatkowego API
+  const facets = null
 
   // if (loading) { ...skeleton... } => usuwamy skeletony; przy pierwszym ładowaniu pokaż prosty komunikat
   const isFirstLoad = loading && !response
@@ -260,7 +247,9 @@ export default function ShopPageClient() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Filtry (sidebar) */}
           <aside className="lg:col-span-1 space-y-6">
-            {/* Kategorie */}
+            {/* Filtry tymczasowo wyłączone - wymagają implementacji facets API */}
+            {/*
+            // Kategorie
             <div>
               <h3 className="text-sm font-semibold mb-3">Kategorie</h3>
               <div className="space-y-1">
@@ -270,89 +259,32 @@ export default function ShopPageClient() {
                 >
                   Wszystkie
                 </button>
-                {facets?.categories?.map((c) => (
-                  <button
-                    key={c.id}
-                    className={`w-full text-left text-sm px-2 py-1 rounded flex items-center justify-between ${params.category === c.id || params.category === c.name ? 'bg-accent/40' : 'hover:bg-accent/30'}`}
-                    onClick={() => updateQuery((sp) => sp.set('category', c.id || c.name || ''))}
-                  >
-                    <span>{c.name || c.id}</span>
-                    <span className="text-muted-foreground">{c.count}</span>
-                  </button>
-                ))}
               </div>
             </div>
 
             <Separator />
 
-            {/* Rozmiary */}
+            // Rozmiary
             <div>
               <h3 className="text-sm font-semibold mb-3">Rozmiar</h3>
               <div className="space-y-2">
-                {facets?.sizes?.map((s) => {
-                  const selected = params.sizes?.includes(s.size) || false
-                  return (
-                    <label key={s.size} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={selected}
-                        onCheckedChange={(checked) => {
-                          updateQuery((sp) => {
-                            const curr = new Set(
-                              (sp.get('sizes') || '')
-                                .split(',')
-                                .map((x) => x.trim())
-                                .filter(Boolean)
-                            )
-                            if (checked) curr.add(s.size)
-                            else curr.delete(s.size)
-                            const next = Array.from(curr)
-                            if (next.length) sp.set('sizes', next.join(','))
-                            else sp.delete('sizes')
-                          })
-                        }}
-                      />
-                      <span className="flex-1">{s.size}</span>
-                      <span className="text-muted-foreground">{s.count}</span>
-                    </label>
-                  )
-                })}
+                Filtry rozmiaru wymagają implementacji API
               </div>
             </div>
 
             <Separator />
 
-            {/* Cena */}
+            // Cena
             <div>
               <h3 className="text-sm font-semibold mb-3">Cena (PLN)</h3>
               <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  placeholder={facets ? String(Math.round((facets.price.min || 0) / 100)) : 'min'}
-                  value={params.price_min ? Math.round(params.price_min / 100) : ''}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const v = e.target.value
-                    updateQuery((sp) => {
-                      if (v) sp.set('price_min', String(Number(v) * 100))
-                      else sp.delete('price_min')
-                    })
-                  }}
-                />
-                <span className="text-muted-foreground">-</span>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  placeholder={facets ? String(Math.ceil((facets.price.max || 0) / 100)) : 'max'}
-                  value={params.price_max ? Math.ceil(params.price_max / 100) : ''}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const v = e.target.value
-                    updateQuery((sp) => {
-                      if (v) sp.set('price_max', String(Number(v) * 100))
-                      else sp.delete('price_max')
-                    })
-                  }}
-                />
+                Filtry ceny wymagają implementacji API
               </div>
+            </div>
+            */}
+            
+            <div className="text-center text-muted-foreground py-8">
+              Filtry będą dostępne wkrótce
             </div>
           </aside>
 
