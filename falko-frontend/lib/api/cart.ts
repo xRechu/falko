@@ -40,7 +40,7 @@ export async function createCart(data: CreateCartRequest = {}): Promise<ApiRespo
     
     const response = await withRetry(async () => {
       return await sdk.store.cart.create({
-        region_id: data.region_id || 'reg_01JZ0ACKJ42QHCZB0XFKBKNG8N' // ID regionu Polski
+        region_id: data.region_id || 'reg_01K4S17EFPZ0BFQWAA6J44VJQ4' // ID regionu Polski (Poland)
       });
     });
 

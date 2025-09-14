@@ -12,7 +12,7 @@ export async function debugCart(cartId?: string) {
       // Stwórz testowy koszyk
       console.log('🔄 Tworzenie testowego koszyka...');
       const createResponse = await sdk.store.cart.create({
-        region_id: 'reg_01JZ0ACKJ42QHCZB0XFKBKNG8N'
+        region_id: 'reg_01K4S17EFPZ0BFQWAA6J44VJQ4'
       });
       console.log('📋 Struktura create response:', JSON.stringify(createResponse, null, 2));
       cartId = createResponse.cart.id;

@@ -48,7 +48,7 @@ export async function fetchProductsFromAPI(options: {
       offset: options.offset || 0,
       collection_id: options.collection_id ? [options.collection_id] : undefined,
       handle: options.handle,
-      region_id: 'reg_01JZ0ACKJ42QHCZB0XFKBKNG8N', // Region Polski
+      region_id: 'reg_01K4S17EFPZ0BFQWAA6J44VJQ4', // Region Polski (Poland)
       fields: '+variants.calculated_price',
     });
 
@@ -118,7 +118,7 @@ export async function fetchProductByIdFromAPI(productId: string): Promise<ApiRes
     
     const medusaSDK = getSDK();
     const response = await medusaSDK.store.product.retrieve(productId, {
-      region_id: 'reg_01JZ0ACKJ42QHCZB0XFKBKNG8N', // Region Polski
+      region_id: 'reg_01K4S17EFPZ0BFQWAA6J44VJQ4', // Region Polski (Poland)
       fields: '+variants.calculated_price',
     });
 
@@ -149,7 +149,7 @@ export async function fetchProductByHandleFromAPI(handle: string): Promise<ApiRe
     const medusaSDK = getSDK();
     const response = await medusaSDK.store.product.list({ 
       handle,
-      region_id: 'reg_01JZ0ACKJ42QHCZB0XFKBKNG8N', // Region Polski
+      region_id: 'reg_01K4S17EFPZ0BFQWAA6J44VJQ4', // Region Polski (Poland)
       fields: '+variants.calculated_price',
     });
 
