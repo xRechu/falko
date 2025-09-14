@@ -1,13 +1,12 @@
 import { API_CONFIG } from '@/lib/api-config';
 import { ApiResponse } from './products';
 import { sdk } from '@/lib/medusa-client';
+import TokenManager from '@/lib/token-manager';
 import type { HttpTypes } from "@medusajs/types";
 
 /**
  * API functions dla autentykacji użytkowników w Medusa.js 2.0 SDK
  * Customer authentication, registration, profile management
- * 
- * UWAGA: SDK automatycznie zarządza tokenami i autoryzacją
  */
 
 // Używamy typu z Medusa 2.0
@@ -120,26 +119,63 @@ export async function registerCustomer(userData: RegisterRequest): Promise<ApiRe
  */
 export async function getCustomer(): Promise<ApiResponse<Customer>> {
   try {
-    console.log('🔄 Fetching customer data via SDK...');
+    console.log('🔄 [JS SDK] getCustomer - Fetching customer data...');
     
-    // SDK automatycznie zarządza tokenami
-    const response = await sdk.store.customer.retrieve();
-    
-    if (response.customer) {
-      console.log('✅ Customer data fetched via SDK');
-      return { data: response.customer as Customer };
+    // Najpierw sprawdźmy czy SDK ma automatyczną autoryzację
+    try {
+      const response = await sdk.store.customer.retrieve();
+      if (response.customer) {
+        console.log('✅ SDK has automatic authorization, customer data:', response.customer);
+        return { data: response.customer as Customer };
+      }
+      throw new Error('No customer data returned');
+    } catch (authError) {
+      console.log('❌ SDK does not have automatic authorization, trying manual token management...');
+      console.log('Auth error:', authError);
+      
+      // Fallback: użyj ręcznego zarządzania tokenami
+      return await getCustomerWithManualToken();
     }
-    
-    throw new Error('No customer data returned');
   } catch (error: any) {
-    console.error('❌ getCustomer SDK error:', error);
+    console.error('❌ [JS SDK] getCustomer error:', error);
     return { 
       error: { 
         message: error.message || 'Błąd pobierania danych użytkownika',
+        status: error.status || 401 
+      } 
+    };
+  }
+}
+
+/**
+ * Fallback funkcja z ręcznym zarządzaniem tokenami dla pobierania danych klienta
+ */
+async function getCustomerWithManualToken(): Promise<ApiResponse<Customer>> {
+  // Pobieramy token z TokenManager
+  const token = TokenManager.get();
+  console.log('TokenManager.get() result:', token ? `${token.substring(0, 20)}...` : 'null');
+  
+  if (!token) {
+    console.warn('❌ [JS SDK] getCustomer - No auth token found');
+    return { 
+      error: { 
+        message: 'Brak tokena uwierzytelniającego - zaloguj się ponownie',
         status: 401 
       } 
     };
   }
+
+  // Ustawiamy token w SDK
+  TokenManager.setInSDK(token);
+  
+  // Próbuj ponownie z tokenem
+  const response = await sdk.store.customer.retrieve();
+  if (response.customer) {
+    console.log('✅ [JS SDK] Customer data retrieved with manual token');
+    return { data: response.customer as Customer };
+  }
+  
+  throw new Error('No customer data returned even with token');
 }
 
 /**
@@ -167,19 +203,58 @@ export async function updateCustomer(
   updates: Partial<Pick<RegisterRequest, 'first_name' | 'last_name' | 'phone'>>
 ): Promise<ApiResponse<Customer>> {
   try {
-    console.log('🔄 Updating customer profile via SDK (session)...');
-    const response = await sdk.store.customer.update(updates);
-    console.log('✅ Customer profile updated (session)');
-    return { data: response.customer as Customer };
+    console.log('🔄 [JS SDK] updateCustomer - Updating customer profile...', updates);
+    
+    // Najpierw sprawdźmy czy SDK ma automatyczną autoryzację
+    try {
+      const response = await sdk.store.customer.update(updates);
+      console.log('✅ SDK has automatic authorization, customer updated:', response);
+      return { data: response.customer as Customer };
+    } catch (authError) {
+      console.log('❌ SDK does not have automatic authorization, trying manual token management...');
+      console.log('Auth error:', authError);
+      
+      // Fallback: użyj ręcznego zarządzania tokenami
+      return await updateCustomerWithManualToken(updates);
+    }
   } catch (error: any) {
-    console.error('❌ updateCustomer SDK error:', error);
+    console.error('❌ [JS SDK] updateCustomer error:', error);
     return {
       error: {
         message: error.message || 'Błąd aktualizacji profilu',
-        status: 400
+        status: error.status || 400
       }
     };
   }
+}
+
+/**
+ * Fallback funkcja z ręcznym zarządzaniem tokenami dla aktualizacji klienta
+ */
+async function updateCustomerWithManualToken(
+  updates: Partial<Pick<RegisterRequest, 'first_name' | 'last_name' | 'phone'>>
+): Promise<ApiResponse<Customer>> {
+  // Pobieramy token z TokenManager
+  const token = TokenManager.get();
+  console.log('TokenManager.get() result:', token ? `${token.substring(0, 20)}...` : 'null');
+  
+  if (!token) {
+    console.warn('❌ [JS SDK] updateCustomer - No auth token found');
+    return { 
+      error: { 
+        message: 'Brak tokena uwierzytelniającego - zaloguj się ponownie',
+        status: 401 
+      } 
+    };
+  }
+
+  // Ustawiamy token w SDK
+  TokenManager.setInSDK(token);
+  
+  // Próbuj ponownie z tokenem
+  const response = await sdk.store.customer.update(updates);
+  console.log('✅ [JS SDK] Customer updated with manual token');
+  return { data: response.customer as Customer };
 }
 
 /**

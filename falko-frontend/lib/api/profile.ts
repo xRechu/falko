@@ -1,12 +1,11 @@
 import { API_CONFIG } from '@/lib/api-config';
 import { ApiResponse } from './products';
 import { sdk } from '@/lib/medusa-client';
+import TokenManager from '@/lib/token-manager';
 
 /**
  * API functions dla zarządzania profilem użytkownika w Medusa.js 2.0 SDK
  * Customer profile, password management
- * 
- * UWAGA: SDK automatycznie zarządza tokenami i autoryzacją
  */
 
 export interface CustomerProfile {
@@ -55,22 +54,56 @@ function transformStoreCustomerToProfile(customer: any): CustomerProfile {
  */
 export async function getCustomerProfile(): Promise<ApiResponse<CustomerProfile>> {
   try {
-    console.log('🔄 Fetching customer profile via SDK...');
+    console.log('🔄 [JS SDK] getCustomerProfile - Fetching profile...');
     
-    // SDK automatycznie zarządza tokenami
-    const response = await sdk.store.customer.retrieve();
-
-    console.log('✅ Customer profile fetched successfully via SDK');
-    return { data: transformStoreCustomerToProfile(response.customer) };
+    // Najpierw sprawdźmy czy SDK ma automatyczną autoryzację
+    try {
+      const response = await sdk.store.customer.retrieve();
+      console.log('✅ SDK has automatic authorization, customer profile:', response);
+      return { data: transformStoreCustomerToProfile(response.customer) };
+    } catch (authError) {
+      console.log('❌ SDK does not have automatic authorization, trying manual token management...');
+      console.log('Auth error:', authError);
+      
+      // Fallback: użyj ręcznego zarządzania tokenami
+      return await getProfileWithManualToken();
+    }
   } catch (error: any) {
-    console.error('❌ getCustomerProfile SDK error:', error);
+    console.error('❌ [JS SDK] getCustomerProfile error:', error);
     return { 
       error: { 
         message: error.message || 'Błąd pobierania profilu',
-        status: 400 
+        status: error.status || 400 
       } 
     };
   }
+}
+
+/**
+ * Fallback funkcja z ręcznym zarządzaniem tokenami dla profilu
+ */
+async function getProfileWithManualToken(): Promise<ApiResponse<CustomerProfile>> {
+  // Pobieramy token z TokenManager
+  const token = TokenManager.get();
+  console.log('TokenManager.get() result:', token ? `${token.substring(0, 20)}...` : 'null');
+  
+  if (!token) {
+    console.warn('❌ [JS SDK] getCustomerProfile - No auth token found');
+    return { 
+      error: { 
+        message: 'Brak tokena uwierzytelniającego - zaloguj się ponownie',
+        status: 401 
+      } 
+    };
+  }
+
+  // Ustawiamy token w SDK
+  TokenManager.setInSDK(token);
+  
+  // Próbuj ponownie z tokenem
+  const response = await sdk.store.customer.retrieve();
+  console.log('✅ [JS SDK] Customer profile retrieved with manual token');
+  return { data: transformStoreCustomerToProfile(response.customer) };
 }
 
 /**
@@ -80,21 +113,58 @@ export async function updateCustomerProfile(
   updates: UpdateProfileRequest
 ): Promise<ApiResponse<CustomerProfile>> {
   try {
-    console.log('🔄 Updating customer profile via SDK...');
+    console.log('🔄 [JS SDK] updateCustomerProfile - Updating profile...', updates);
     
-    const response = await sdk.store.customer.update(updates);
-
-    console.log('✅ Customer profile updated successfully via SDK');
-    return { data: transformStoreCustomerToProfile(response.customer) };
+    // Najpierw sprawdźmy czy SDK ma automatyczną autoryzację
+    try {
+      const response = await sdk.store.customer.update(updates);
+      console.log('✅ SDK has automatic authorization, profile updated:', response);
+      return { data: transformStoreCustomerToProfile(response.customer) };
+    } catch (authError) {
+      console.log('❌ SDK does not have automatic authorization, trying manual token management...');
+      console.log('Auth error:', authError);
+      
+      // Fallback: użyj ręcznego zarządzania tokenami
+      return await updateProfileWithManualToken(updates);
+    }
   } catch (error: any) {
-    console.error('❌ updateCustomerProfile SDK error:', error);
+    console.error('❌ [JS SDK] updateCustomerProfile error:', error);
     return { 
       error: { 
         message: error.message || 'Błąd aktualizacji profilu',
-        status: 400 
+        status: error.status || 400 
       } 
     };
   }
+}
+
+/**
+ * Fallback funkcja z ręcznym zarządzaniem tokenami dla aktualizacji profilu
+ */
+async function updateProfileWithManualToken(
+  updates: UpdateProfileRequest
+): Promise<ApiResponse<CustomerProfile>> {
+  // Pobieramy token z TokenManager
+  const token = TokenManager.get();
+  console.log('TokenManager.get() result:', token ? `${token.substring(0, 20)}...` : 'null');
+  
+  if (!token) {
+    console.warn('❌ [JS SDK] updateCustomerProfile - No auth token found');
+    return { 
+      error: { 
+        message: 'Brak tokena uwierzytelniającego - zaloguj się ponownie',
+        status: 401 
+      } 
+    };
+  }
+
+  // Ustawiamy token w SDK
+  TokenManager.setInSDK(token);
+  
+  // Próbuj ponownie z tokenem
+  const response = await sdk.store.customer.update(updates);
+  console.log('✅ [JS SDK] Customer profile updated with manual token');
+  return { data: transformStoreCustomerToProfile(response.customer) };
 }
 
 /**
@@ -105,29 +175,74 @@ export async function changeCustomerPassword(
   passwordData: ChangePasswordRequest
 ): Promise<ApiResponse<void>> {
   try {
-    console.log('🔄 Changing customer password via SDK...');
+    console.log('🔄 [JS SDK] changeCustomerPassword - Changing password...');
     
-    // W Medusa 2.0 może być inny endpoint dla zmiany hasła
-    // Użyjemy SDK client fetch dla custom endpointów
-    await sdk.client.fetch('/auth/customer/emailpass/update', {
-      method: 'POST',
-      body: JSON.stringify({
-        old_password: passwordData.old_password,
-        new_password: passwordData.new_password,
-      }),
-    });
-
-    console.log('✅ Customer password changed successfully via SDK');
-    return { data: undefined };
+    // Najpierw sprawdźmy czy SDK ma automatyczną autoryzację
+    try {
+      // W Medusa 2.0 może być inny endpoint dla zmiany hasła
+      // Użyjemy SDK client fetch dla custom endpointów
+      await sdk.client.fetch('/auth/customer/emailpass/update', {
+        method: 'POST',
+        body: JSON.stringify({
+          old_password: passwordData.old_password,
+          new_password: passwordData.new_password,
+        }),
+      });
+      
+      console.log('✅ SDK has automatic authorization, password changed');
+      return { data: undefined };
+    } catch (authError) {
+      console.log('❌ SDK does not have automatic authorization, trying manual token management...');
+      console.log('Auth error:', authError);
+      
+      // Fallback: użyj ręcznego zarządzania tokenami
+      return await changePasswordWithManualToken(passwordData);
+    }
   } catch (error: any) {
-    console.error('❌ changeCustomerPassword SDK error:', error);
+    console.error('❌ [JS SDK] changeCustomerPassword error:', error);
     return { 
       error: { 
         message: error.message || 'Błąd zmiany hasła',
-        status: 400 
+        status: error.status || 400 
       } 
     };
   }
+}
+
+/**
+ * Fallback funkcja z ręcznym zarządzaniem tokenami dla zmiany hasła
+ */
+async function changePasswordWithManualToken(
+  passwordData: ChangePasswordRequest
+): Promise<ApiResponse<void>> {
+  // Pobieramy token z TokenManager
+  const token = TokenManager.get();
+  console.log('TokenManager.get() result:', token ? `${token.substring(0, 20)}...` : 'null');
+  
+  if (!token) {
+    console.warn('❌ [JS SDK] changeCustomerPassword - No auth token found');
+    return { 
+      error: { 
+        message: 'Brak tokena uwierzytelniającego - zaloguj się ponownie',
+        status: 401 
+      } 
+    };
+  }
+
+  // Ustawiamy token w SDK
+  TokenManager.setInSDK(token);
+  
+  // Próbuj ponownie z tokenem
+  await sdk.client.fetch('/auth/customer/emailpass/update', {
+    method: 'POST',
+    body: JSON.stringify({
+      old_password: passwordData.old_password,
+      new_password: passwordData.new_password,
+    }),
+  });
+  
+  console.log('✅ [JS SDK] Customer password changed with manual token');
+  return { data: undefined };
 }
 
 /**

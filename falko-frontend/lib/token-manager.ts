@@ -297,6 +297,27 @@ export class TokenManager {
       };
     }
   }
+
+  /**
+   * Set token in SDK for API requests
+   */
+  static setInSDK(token: string): void {
+    if (!token || token.startsWith('fake_token_')) {
+      console.log('⏭️ Pomijam ustawianie tokenu (brak realnego tokenu JWT)');
+      return;
+    }
+    try {
+      console.log('🔑 Setting real token in SDK...', token.substring(0, 20) + '...');
+      // Import SDK dynamically to avoid circular dependencies
+      import('@/lib/medusa-client').then(({ sdk }) => {
+        if ((sdk as any).client && (sdk as any).client.setHeaders) {
+          (sdk as any).client.setHeaders({ 'Authorization': `Bearer ${token}` });
+        }
+      });
+    } catch (error) {
+      console.error('❌ Failed to set token in SDK:', error);
+    }
+  }
 }
 
 export default TokenManager;
