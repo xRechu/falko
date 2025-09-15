@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 // Helpers
 function setCookie(name: string, value: string, days = 180) {
@@ -122,6 +124,29 @@ export default function CookieConsent() {
     return (
       <div className="fixed inset-x-0 bottom-0 z-[100]">
         <div className="mx-auto max-w-5xl m-4 rounded-lg border bg-background shadow-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          {/* Mobile sheet trigger */}
+          <div className="md:hidden">
+            <p className="text-sm text-foreground/80">
+              Używamy cookies do działania serwisu (niezbędne) oraz – za Twoją zgodą – do preferencji, statystyk i marketingu.
+            </p>
+            <div className="flex flex-col gap-2 mt-3">
+              <Button variant="outline" size="sm" onClick={rejectAll}>Odrzuć wszystkie</Button>
+              <Button variant="outline" size="sm" onClick={() => setExpanded(true)}>Ustawienia</Button>
+              <Button size="sm" onClick={acceptAll} autoFocus>Akceptuję wszystkie</Button>
+            </div>
+          </div>
+          {/* Desktop banner */}
+          <div className="hidden md:flex w-full items-center gap-3">
+            <p className="text-sm text-foreground/80 flex-1">
+              Używamy cookies do działania serwisu (niezbędne) oraz – za Twoją zgodą – do preferencji, statystyk i marketingu. 
+              Szczegóły: <Link href="/polityka-cookies" className="underline">Polityka cookies</Link>.
+            </p>
+            <div className="flex items-center gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={rejectAll} aria-label="Odrzuć wszystkie">Odrzuć wszystkie</Button>
+              <Button variant="outline" size="sm" onClick={() => setExpanded(true)} aria-expanded={false} aria-controls="cookie-consent-panel">Ustawienia</Button>
+              <Button size="sm" onClick={acceptAll} autoFocus aria-label="Akceptuję wszystkie">Akceptuję wszystkie</Button>
+            </div>
+          </div>
           <p className="text-sm text-foreground/80 flex-1">
             Używamy cookies do działania serwisu (niezbędne) oraz – za Twoją zgodą – do preferencji, statystyk i marketingu. 
             Szczegóły: <Link href="/polityka-cookies" className="underline">Polityka cookies</Link>.
@@ -139,7 +164,7 @@ export default function CookieConsent() {
   // Expanded, granular preferences
   return (
     <div className="fixed inset-x-0 bottom-0 z-[100]">
-      <div ref={panelRef} id="cookie-consent-panel" className="mx-auto max-w-3xl m-4 rounded-lg border bg-background shadow-xl p-4" role="dialog" aria-modal="true" aria-label="Zgody na cookies" tabIndex={-1}>
+      <div ref={panelRef} id="cookie-consent-panel" className="mx-auto md:max-w-3xl m-0 md:m-4 rounded-t-2xl md:rounded-lg border bg-background shadow-xl p-4 md:p-4 w-full" role="dialog" aria-modal="true" aria-label="Zgody na cookies" tabIndex={-1} style={{paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)'}}>
         <h3 className="font-semibold mb-2 text-foreground">Twoja prywatność</h3>
         <p className="text-sm text-foreground/70 mb-4">
           Używamy plików cookies do zapewnienia prawidłowego działania strony (niezbędne), a także – za Twoją zgodą – do zapamiętywania preferencji, prowadzenia statystyk i działań marketingowych.
@@ -181,7 +206,7 @@ export default function CookieConsent() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-end mt-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-end mt-4 sticky bottom-0 bg-gradient-to-t from-background to-background/60 pt-2">
           <Button variant="outline" className="w-full sm:w-auto" onClick={rejectAll}>Odrzuć wszystkie</Button>
           <Button variant="outline" className="w-full sm:w-auto" onClick={()=>save({ reloadOnMarketing: true })}>Zapisz preferencje</Button>
           <Button className="w-full sm:w-auto" onClick={acceptAll}>Akceptuję wszystkie</Button>

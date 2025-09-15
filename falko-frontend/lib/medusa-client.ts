@@ -37,23 +37,31 @@ try {
   const originalFetch = (sdk as any).client.request.bind((sdk as any).client);
   
   (sdk as any).client.request = async (path: string, options: RequestInit = {}) => {
+    const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '';
     const enhancedOptions = {
       ...options,
       credentials: 'include' as RequestCredentials,
       headers: {
         'Content-Type': 'application/json',
+        'x-publishable-api-key': pubKey,
         ...(options.headers || {})
       }
     };
     
-    console.log(`🌐 SDK Request to: ${path}`, enhancedOptions);
+    console.log(`🌐 SDK Request to: ${path}`, {
+      ...enhancedOptions,
+      headers: {
+        ...enhancedOptions.headers,
+        'x-publishable-api-key': pubKey ? `${pubKey.substring(0, 10)}...` : 'NOT SET'
+      }
+    });
     
     return originalFetch(path, enhancedOptions);
   };
   
-  console.log('✅ SDK fetch credentials=include ustawione');
+  console.log('✅ SDK fetch credentials=include oraz x-publishable-api-key ustawione');
 } catch (e) {
-  console.warn('⚠️ Nie udało się ustawić credentials=include', e);
+  console.warn('⚠️ Nie udało się ustawić SDK enhancements', e);
 }
 
 // Helper do ręcznego zarządzania tokenami w localStorage

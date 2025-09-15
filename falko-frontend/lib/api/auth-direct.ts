@@ -27,6 +27,7 @@ export async function loginDirectAPI(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
       },
       credentials: 'include', // Important for cookies
       body: JSON.stringify({
@@ -48,6 +49,7 @@ export async function loginDirectAPI(
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
       },
       credentials: 'include', // Important for cookies
     });
@@ -93,6 +95,7 @@ export async function getCustomerDirectAPI(): Promise<ApiResponse<Customer>> {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
       },
       credentials: 'include', // Important for cookies
     });
@@ -129,6 +132,7 @@ export async function logoutDirectAPI(): Promise<ApiResponse<void>> {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '',
       },
       credentials: 'include', // Important for cookies
     });
