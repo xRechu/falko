@@ -23,11 +23,7 @@ export const sdk = new Medusa({
   publishableKey: API_CONFIG.MEDUSA_PUBLISHABLE_KEY,
   debug: process.env.NODE_ENV === 'development',
   auth: {
-    type: 'jwt'
-  },
-  // Dodanie globalnej konfiguracji fetch  
-  globalHeaders: {
-    'Content-Type': 'application/json',
+    type: 'session'
   }
 });
 
