@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Cookie as CookieIcon } from 'lucide-react'
 // Helpers
 function setCookie(name: string, value: string, days = 180) {
   if (typeof document === 'undefined') return
@@ -109,8 +110,15 @@ export default function CookieConsent() {
   if (!open) {
     return reopenVisible ? (
       <div className="fixed left-4 bottom-4 z-[90]">
-        <Button variant="outline" size="sm" onClick={() => { setOpen(true); setExpanded(true) }}>
-          Ustawienia prywatności
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full border p-0 h-10 w-10 shadow-sm hover:shadow transition-shadow bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50"
+          aria-label="Ustawienia prywatności"
+          title="Ustawienia prywatności"
+          onClick={() => { setOpen(true); setExpanded(true) }}
+        >
+          <CookieIcon className="size-5" />
         </Button>
       </div>
     ) : null
