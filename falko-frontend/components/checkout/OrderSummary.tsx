@@ -59,6 +59,15 @@ export function OrderSummary({ cart, shippingInfo }: OrderSummaryProps) {
     }).format(price / 100);
   };
 
+  // Debug logging dla OrderSummary
+  console.log('📋 OrderSummary debug:', {
+    cart,
+    hasCart: !!cart,
+    itemsLength: cart?.items?.length || 0,
+    items: cart?.items,
+    shippingInfo
+  });
+
   // Oblicz całkowity koszt z uwzględnieniem Furgonetka
   const totalWithShipping = () => {
     if (shippingInfo) {
@@ -142,7 +151,7 @@ export function OrderSummary({ cart, shippingInfo }: OrderSummaryProps) {
       {/* Podsumowanie finansowe */}
       <div className="space-y-3">
         <div className="flex justify-between text-sm">
-          <span>Suma częściowa ({cart.item_count} produktów):</span>
+          <span>Suma częściowa ({cart.item_count || cart.items?.length || 0} produktów):</span>
           <span>{formatPrice(cart.subtotal)}</span>
         </div>
         

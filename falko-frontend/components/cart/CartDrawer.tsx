@@ -21,7 +21,17 @@ export function CartDrawer({ children }: CartDrawerProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const { cart, isLoading: cartLoading } = state;
-  const itemCount = cart?.item_count || 0;
+  const itemCount = cart?.item_count || cart?.items?.length || 0;
+
+  // Debug logging
+  console.log('🛒 CartDrawer debug:', {
+    cart,
+    hasCart: !!cart,
+    itemsLength: cart?.items?.length || 0,
+    itemCount,
+    cartLoading,
+    items: cart?.items
+  });
 
   const handleQuantityChange = async (lineItemId: string, newQuantity: number) => {
     if (isLoading) return;
