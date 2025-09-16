@@ -123,6 +123,10 @@ const medusaConfig = {
       options: {
         prefetch: false
       }
+    },
+    {
+      resolve: '@agilo/medusa-analytics-plugin',
+      options: {}
     }
   ]
 };
