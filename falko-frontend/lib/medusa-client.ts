@@ -34,14 +34,22 @@ try {
   
   (sdk as any).client.request = async (path: string, options: RequestInit = {}) => {
     const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '';
-    const enhancedOptions = {
+    // Try to read bearer from storage if present (fallback when cookies are blocked)
+    let bearer: string | null = null;
+    try {
+      if (typeof window !== 'undefined') {
+        bearer = localStorage.getItem('medusa_auth_token') || sessionStorage.getItem('medusa_auth_token');
+      }
+    } catch {}
+    const enhancedOptions: RequestInit = {
       ...options,
-      credentials: 'include' as RequestCredentials,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'x-publishable-api-key': pubKey,
-        ...(options.headers || {})
-      }
+        ...(bearer ? { 'Authorization': `Bearer ${bearer}` } : {}),
+        ...(options.headers || {}),
+      },
     };
     
     console.log(`🌐 SDK Request to: ${path}`, {
