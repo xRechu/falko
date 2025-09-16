@@ -4,6 +4,17 @@ import {
 } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 
+// CORS helper
+function setCors(res: MedusaResponse) {
+  const origins = process.env.STORE_CORS?.split(',').map(o=>o.trim()).filter(Boolean) || ['http://localhost:3000']
+  res.header('Access-Control-Allow-Origin', origins.includes('*') ? '*' : origins.join(','))
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Content-Type, x-publishable-api-key, Authorization')
+  res.header('Access-Control-Allow-Credentials', 'true')
+}
+
+export async function OPTIONS(req: MedusaRequest, res: MedusaResponse) { setCors(res); return res.status(200).end() }
+
 /**
  * Endpoint do pobierania stanów magazynowych wariantów produktów
  * Dostępny publicznie dla Store API
@@ -13,6 +24,7 @@ export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
+  setCors(res)
   try {
     console.log('🔄 Fetching inventory data from Medusa modules...');
 
