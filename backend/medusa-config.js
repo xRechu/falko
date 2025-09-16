@@ -126,7 +126,10 @@ const medusaConfig = {
     },
     {
       resolve: '@agilo/medusa-analytics-plugin',
-      options: {}
+      options: {
+        // Low stock threshold for alerts (default: 5)
+        stock_threshold: 10
+      }
     }
   ]
 };
