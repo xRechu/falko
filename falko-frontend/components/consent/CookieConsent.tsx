@@ -1,12 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-
 // Helpers
 function setCookie(name: string, value: string, days = 180) {
   if (typeof document === 'undefined') return
@@ -128,6 +125,7 @@ export default function CookieConsent() {
           <div className="md:hidden">
             <p className="text-sm text-foreground/80">
               Używamy cookies do działania serwisu (niezbędne) oraz – za Twoją zgodą – do preferencji, statystyk i marketingu.
+              Szczegóły: <Link href="/polityka-cookies" className="underline">Polityka cookies</Link>.
             </p>
             <div className="flex flex-col gap-2 mt-3">
               <Button variant="outline" size="sm" onClick={rejectAll}>Odrzuć wszystkie</Button>
@@ -146,15 +144,6 @@ export default function CookieConsent() {
               <Button variant="outline" size="sm" onClick={() => setExpanded(true)} aria-expanded={false} aria-controls="cookie-consent-panel">Ustawienia</Button>
               <Button size="sm" onClick={acceptAll} autoFocus aria-label="Akceptuję wszystkie">Akceptuję wszystkie</Button>
             </div>
-          </div>
-          <p className="text-sm text-foreground/80 flex-1">
-            Używamy cookies do działania serwisu (niezbędne) oraz – za Twoją zgodą – do preferencji, statystyk i marketingu. 
-            Szczegóły: <Link href="/polityka-cookies" className="underline">Polityka cookies</Link>.
-          </p>
-          <div className="flex items-center gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={rejectAll} aria-label="Odrzuć wszystkie">Odrzuć wszystkie</Button>
-            <Button variant="outline" size="sm" onClick={() => setExpanded(true)} aria-expanded={false} aria-controls="cookie-consent-panel">Ustawienia</Button>
-            <Button size="sm" onClick={acceptAll} autoFocus aria-label="Akceptuję wszystkie">Akceptuję wszystkie</Button>
           </div>
         </div>
       </div>
