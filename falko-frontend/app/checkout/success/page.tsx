@@ -128,23 +128,6 @@ export default function CheckoutSuccessPage() {
             body: JSON.stringify({ cartId: orderId })
           })
         }
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cartId: orderId })
-        })
-        if (!r.ok) {
-          // Fallback: przygotuj koszyk i spróbuj ponownie
-          await fetch('/api/checkout/prepare', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cartId: orderId })
-          })
-          r = await fetch('/api/checkout/complete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cartId: orderId })
-          })
-        }
         if (r.ok) {
           const data = await r.json()
           setPaymentStatus({
