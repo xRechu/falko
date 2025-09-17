@@ -12,22 +12,32 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const paymentId = req.query?.paymentId as string
     if (!paymentId) return res.status(400).json({ error: 'paymentId required' })
 
-    const idempotencyKey = crypto.randomUUID()
+    // For GET status, Paynow doc doesn't require Idempotency-Key; many clients omit it
+    const idempotencyKey = '' as any
     const baseUrl = getPaynowBaseUrl(ENV)
 
-    const signature = calculateRequestSignatureV3({ apiKey: API_KEY, idempotencyKey, bodyString: '', signatureKey: SIGNATURE_KEY, parameters: {} })
+    // Signature is still required by docs even for GET; compute with empty body
+    const signature = calculateRequestSignatureV3({ apiKey: API_KEY, idempotencyKey: '' as any, bodyString: '', signatureKey: SIGNATURE_KEY, parameters: {} })
 
     const tryUrls = [
-      `${baseUrl}/v3/payments/${encodeURIComponent(paymentId)}`,
       `${baseUrl}/v3/payments/${encodeURIComponent(paymentId)}/status`,
+      `${baseUrl}/v3/payments/${encodeURIComponent(paymentId)}`,
       `${baseUrl}/v3/transactions/${encodeURIComponent(paymentId)}`,
       `${baseUrl}/v3/transactions/${encodeURIComponent(paymentId)}/status`,
       `${baseUrl}/v3/payments/transactions/${encodeURIComponent(paymentId)}`,
     ]
 
+    let lastErrorStatus: number | null = null
+    let lastErrorBody: string | null = null
+
     for (const url of tryUrls) {
-      const r = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json', 'Api-Key': API_KEY, 'Signature': signature, 'Idempotency-Key': idempotencyKey } })
-      const text = await r.text()
+      let r = await fetch(url, { method: 'GET', headers: { 'Accept': '*/*', 'Api-Key': API_KEY, 'Signature': signature, 'User-Agent': 'FalkoMedusa/1.0' } })
+      let text = await r.text()
+      if (r.status === 400 || r.status === 401) {
+        // Sandbox sometimes rejects signed GET; retry with Api-Key only
+        r = await fetch(url, { method: 'GET', headers: { 'Accept': '*/*', 'Api-Key': API_KEY, 'User-Agent': 'FalkoMedusa/1.0' } })
+        text = await r.text()
+      }
       if (r.ok) {
         try {
           const data = JSON.parse(text)
@@ -39,7 +49,14 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
           return res.status(200).json({ status: null })
         }
       }
-      if (r.status !== 404) return res.status(r.status).json({ error: 'Paynow error' })
+      // remember error and try next URL
+      lastErrorStatus = r.status
+      lastErrorBody = text
+      if (r.status === 404) continue
+    }
+
+    if (lastErrorStatus) {
+      return res.status(lastErrorStatus).json({ error: 'Paynow error', details: process.env.NODE_ENV === 'production' ? undefined : lastErrorBody })
     }
 
     return res.status(200).json({ status: null })

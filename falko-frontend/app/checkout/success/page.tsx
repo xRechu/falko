@@ -26,6 +26,8 @@ export default function CheckoutSuccessPage() {
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [initialCheckDone, setInitialCheckDone] = useState(false)
+  const initialDoneRef = useRef(false)
 
   useEffect(() => {
     if (!orderId) {
@@ -70,7 +72,7 @@ export default function CheckoutSuccessPage() {
 
     try {
       isCheckingRef.current = true
-      setLoading(true)
+      if (!initialDoneRef.current) setLoading(true)
       // Poll statusu Paynow jeśli mamy paymentId; w przeciwnym razie pokaż pending
       let confirmed = false
       // Pobierz bieżące paymentId z sessionStorage (po ew. hydracji)
@@ -149,7 +151,11 @@ export default function CheckoutSuccessPage() {
       }
     } finally {
       setLoading(false)
-  isCheckingRef.current = false
+      if (!initialDoneRef.current) {
+        initialDoneRef.current = true
+        setInitialCheckDone(true)
+      }
+      isCheckingRef.current = false
     }
   }
 
@@ -200,7 +206,7 @@ async function pollPaymentUntilConfirmed(paymentId: string, timeoutMs = 30_000, 
   return false
 }
 
-  if (loading) {
+  if (loading && !initialDoneRef.current) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="p-8 text-center max-w-md">

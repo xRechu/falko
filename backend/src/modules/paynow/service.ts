@@ -34,7 +34,7 @@ export function calculateRequestSignatureV3(input: SignatureInputV3): string {
   const payload = {
     headers: {
       'Api-Key': apiKey,
-      'Idempotency-Key': idempotencyKey,
+      ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
     },
     parameters: sortedParams,
     body: bodyString ?? '',
