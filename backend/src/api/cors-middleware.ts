@@ -16,7 +16,9 @@ export function corsMiddleware(
   const allowedOrigins = [
     'http://localhost:3000',
     'https://falko-frontend.pages.dev',
-    'https://falko-56m.pages.dev'
+    'https://falko-56m.pages.dev',
+    'https://falkoproject.com',
+    'https://www.falkoproject.com'
   ];
   
   // Check if origin is allowed
@@ -27,7 +29,7 @@ export function corsMiddleware(
   // Essential headers for cookie authentication
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, x-publishable-api-key');
   res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
   
   // Handle preflight requests

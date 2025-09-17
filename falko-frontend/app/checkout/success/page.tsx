@@ -16,6 +16,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { formatPaymentAmount, type PaymentStatus } from '@/lib/api/payments'
+import { getCart } from '@/lib/api/cart'
 import { toast } from 'sonner'
 
 export default function CheckoutSuccessPage() {
@@ -28,6 +29,8 @@ export default function CheckoutSuccessPage() {
   const [error, setError] = useState<string | null>(null)
   const [initialCheckDone, setInitialCheckDone] = useState(false)
   const initialDoneRef = useRef(false)
+  const [cartTotal, setCartTotal] = useState<number | null>(null)
+  const [cartCurrency, setCartCurrency] = useState<string>('PLN')
 
   useEffect(() => {
     if (!orderId) {
@@ -38,6 +41,12 @@ export default function CheckoutSuccessPage() {
     // Spróbuj dograć paymentId z HttpOnly cookie przez endpoint serwerowy
     const hydrate = async () => {
       try {
+        // Pobierz kwotę z koszyka do pending view
+        const cartResp = await getCart(orderId)
+        if (cartResp?.data) {
+          setCartTotal(cartResp.data.total ?? cartResp.data.current_total ?? 0)
+          setCartCurrency(cartResp.data.currency_code || 'PLN')
+        }
         if (!paymentIdFromQuery) {
           const r = await fetch(`/api/payments/paynow/payment-id?cart_id=${encodeURIComponent(orderId)}`, { cache: 'no-store' })
           if (r.ok) {
@@ -91,8 +100,34 @@ export default function CheckoutSuccessPage() {
         confirmed = await pollPaymentUntilConfirmed(pid, 30_000, 2_000)
       }
       if (confirmed) {
-        // Finalizuj zamówienie w Medusie
-        let r = await fetch('/api/checkout/complete', {
+        // Spróbuj kilkukrotnie finalizować zamówienie w Medusie (idempotentnie)
+        // zanim pokażemy sukces
+        let attempts = 0
+        let r: Response | null = null
+        while (attempts < 3) {
+          r = await fetch('/api/checkout/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cartId: orderId })
+          })
+          if (r.ok) break
+          // krótka próba przygotowania i ponowna finalizacja
+          await fetch('/api/checkout/prepare', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cartId: orderId })
+          })
+          attempts++
+          await new Promise(res => setTimeout(res, 1500))
+        }
+        if (!r || !r.ok) {
+          // Ostatnia próba finalizacji
+          r = await fetch('/api/checkout/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cartId: orderId })
+          })
+        }
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cartId: orderId })
@@ -188,7 +223,7 @@ async function pollPaymentUntilConfirmed(paymentId: string, timeoutMs = 30_000, 
   let nullCount = 0
   while (Date.now() - start < timeoutMs) {
     try {
-      const r = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ''}/store/payments/paynow/status?paymentId=${encodeURIComponent(paymentId)}`, { cache: 'no-store' })
+      const r = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ''}/store/payments/paynow/status?paymentId=${encodeURIComponent(paymentId)}`, { cache: 'no-store', headers: { 'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '' } })
       if (r.ok) {
         const data = await r.json()
         const raw = (data?.status || '').toString().toUpperCase()
@@ -295,7 +330,10 @@ async function pollPaymentUntilConfirmed(paymentId: string, timeoutMs = 30_000, 
             <div className="flex justify-between">
               <span className="text-gray-600">Kwota:</span>
               <span className="font-medium">
-                {formatPaymentAmount(paymentStatus.total_amount, paymentStatus.currency)}
+                {formatPaymentAmount(
+                  paymentStatus.payment_status === 'captured' ? (paymentStatus.total_amount || cartTotal || 0) : (cartTotal || paymentStatus.total_amount || 0),
+                  paymentStatus.payment_status === 'captured' ? (paymentStatus.currency || cartCurrency || 'PLN') : (cartCurrency || paymentStatus.currency || 'PLN')
+                )}
               </span>
             </div>
             <div className="flex justify-between">
