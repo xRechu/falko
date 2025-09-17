@@ -5,15 +5,24 @@ import {
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 
 // CORS helper
-function setCors(res: MedusaResponse) {
+function setCors(req: MedusaRequest, res: MedusaResponse) {
   const origins = process.env.STORE_CORS?.split(',').map(o=>o.trim()).filter(Boolean) || ['http://localhost:3000']
-  res.header('Access-Control-Allow-Origin', origins.includes('*') ? '*' : origins.join(','))
+  const origin = req.get('Origin')
+  
+  if (origins.includes('*')) {
+    res.header('Access-Control-Allow-Origin', '*')
+  } else if (origin && origins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin)
+  } else if (origins.length > 0) {
+    res.header('Access-Control-Allow-Origin', origins[0])
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS')
   res.header('Access-Control-Allow-Headers', 'Content-Type, x-publishable-api-key, Authorization')
   res.header('Access-Control-Allow-Credentials', 'true')
 }
 
-export async function OPTIONS(req: MedusaRequest, res: MedusaResponse) { setCors(res); return res.status(200).end() }
+export async function OPTIONS(req: MedusaRequest, res: MedusaResponse) { setCors(req, res); return res.status(200).end() }
 
 /**
  * Endpoint do pobierania stanów magazynowych wariantów produktów
@@ -24,7 +33,7 @@ export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
-  setCors(res)
+  setCors(req, res)
   try {
     console.log('🔄 Fetching inventory data from Medusa modules...');
 

@@ -2,19 +2,27 @@ import {
   MedusaRequest, 
   MedusaResponse 
 } from "@medusajs/framework/http"
-import { Modules } from "@medusajs/framework/utils"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { Modules, ContainerRegistrationKeys } from "@medusajs/framework/utils"
 
 // CORS helper
-function setCors(res: MedusaResponse) {
+function setCors(req: MedusaRequest, res: MedusaResponse) {
   const origins = process.env.STORE_CORS?.split(',').map(o=>o.trim()).filter(Boolean) || ['http://localhost:3000']
-  res.header('Access-Control-Allow-Origin', origins.includes('*') ? '*' : origins.join(','))
+  const origin = req.get('Origin')
+  
+  if (origins.includes('*')) {
+    res.header('Access-Control-Allow-Origin', '*')
+  } else if (origin && origins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin)
+  } else if (origins.length > 0) {
+    res.header('Access-Control-Allow-Origin', origins[0])
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS')
   res.header('Access-Control-Allow-Headers', 'Content-Type, x-publishable-api-key, Authorization')
   res.header('Access-Control-Allow-Credentials', 'true')
 }
 
-export async function OPTIONS(req: MedusaRequest, res: MedusaResponse) { setCors(res); return res.status(200).end() }
+export async function OPTIONS(req: MedusaRequest, res: MedusaResponse) { setCors(req, res); return res.status(200).end() }
 
 /**
  * Endpoint do pobierania cen wariantów produktów
@@ -25,96 +33,68 @@ export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
-  setCors(res)
+  setCors(req, res)
   try {
-    console.log('🔄 Fetching prices data from Medusa modules...');
+    console.log('💰 Fetching price data from Medusa modules...');
 
     const productModuleService = req.scope.resolve(Modules.PRODUCT)
     const pricingModuleService = req.scope.resolve(Modules.PRICING)
-
+    
     // Pobierz wszystkie warianty produktów
     const variants = await productModuleService.listProductVariants({}, {
-      select: ['id', 'title']
+      select: ['id', 'title', 'sku']
     })
 
-    console.log(`📦 Found ${variants.length} variants to check prices`)
+    console.log(`💰 Found ${variants.length} variants to get prices for`)
 
-    // Pobierz linki między wariantami a price sets
+    // Pobierz linki między wariantami a price sets używając query
     const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
-    const { data: variantPriceSetLinks } = await query.graph({
+    const { data: variantPriceLinks } = await query.graph({
       entity: "product_variant_price_set",
       fields: ["variant_id", "price_set_id"]
     })
 
-    console.log(`🔗 Found ${variantPriceSetLinks.length} variant-price-set links`)
-
-    // Grupuj price_set_id po variant_id
-    const priceSetsByVariant: Record<string, string[]> = {}
-    for (const link of variantPriceSetLinks) {
-      if (!priceSetsByVariant[link.variant_id]) {
-        priceSetsByVariant[link.variant_id] = []
-      }
-      priceSetsByVariant[link.variant_id].push(link.price_set_id)
-    }
-
-    // Pobierz wszystkie price sety za jednym razem
-    const allPriceSetIds = [...new Set(variantPriceSetLinks.map(link => link.price_set_id))]
-    
-    let allPrices: any[] = []
-    if (allPriceSetIds.length > 0) {
-      const priceSets = await pricingModuleService.listPriceSets({
-        id: allPriceSetIds
-      }, {
-        relations: ["prices"]
-      })
-
-      // Zbierz wszystkie ceny z price setów
-      for (const priceSet of priceSets) {
-        if (priceSet.prices && priceSet.prices.length > 0) {
-          for (const price of priceSet.prices) {
-            allPrices.push({
-              ...price,
-              price_set_id: priceSet.id
-            })
-          }
-        }
-      }
-    }
-
-    console.log(`💰 Found ${allPrices.length} total prices`)
-
     // Mapuj dane do naszego formatu API
-    const pricesMap: Record<string, any[]> = {}
+    const pricesMap: Record<string, {
+      prices: Array<{
+        id: string
+        amount: number
+        currency_code: string
+        price_set_id?: string
+      }>
+    }> = {};
 
     for (const variant of variants) {
-      const variantPriceSetIds = priceSetsByVariant[variant.id] || []
+      let variantPrices: any[] = []
       
-      // Znajdź ceny dla tego wariantu
-      const variantPrices = allPrices.filter(price => 
-        variantPriceSetIds.includes(price.price_set_id)
-      ).map(price => ({
-        id: price.id,
-        currency_code: price.currency_code || 'pln',
-        amount: price.amount || 0,
-        min_quantity: price.min_quantity || undefined,
-        max_quantity: price.max_quantity || undefined
-      }))
-
-      if (variantPrices.length > 0) {
-        pricesMap[variant.id] = variantPrices
-      } else {
-        // Dodaj domyślną cenę PLN jeśli nie ma cen
-        pricesMap[variant.id] = [{
-          id: `default-${variant.id}`,
-          currency_code: 'pln',
-          amount: 0,
-          min_quantity: undefined,
-          max_quantity: undefined
-        }]
+      // Znajdź price_set_id dla tego wariantu
+      const variantLink = variantPriceLinks.find(link => link.variant_id === variant.id)
+      
+      if (variantLink?.price_set_id) {
+        try {
+          // Pobierz price set z cenami
+          const priceSet = await pricingModuleService.retrievePriceSet(variantLink.price_set_id, {
+            relations: ['prices']
+          })
+          
+          variantPrices = priceSet.prices || []
+        } catch (priceError) {
+          console.warn(`⚠️ Could not fetch prices for variant ${variant.id}:`, priceError)
+          variantPrices = []
+        }
+      }
+      
+      pricesMap[variant.id] = {
+        prices: variantPrices.map(price => ({
+          id: price.id,
+          amount: price.amount || 0,
+          currency_code: price.currency_code || 'pln',
+          price_set_id: variantLink?.price_set_id
+        }))
       }
     }
-
-    console.log(`✅ Prepared prices for ${Object.keys(pricesMap).length} variants`)
+    
+    console.log(`✅ Prepared price data for ${Object.keys(pricesMap).length} variants`)
     
     res.json({
       prices: pricesMap
@@ -122,7 +102,7 @@ export async function GET(
   } catch (error) {
     console.error('❌ Error fetching prices:', error)
     res.status(500).json({
-      error: "Failed to fetch prices data",
+      error: "Failed to fetch price data",
       details: error?.message || 'Unknown error'
     })
   }
