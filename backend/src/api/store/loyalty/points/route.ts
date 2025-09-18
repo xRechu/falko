@@ -2,10 +2,15 @@ import type { MedusaRequest, MedusaResponse } from '@medusajs/framework'
 import { LOYALTY_ENABLED } from '../../../../lib/constants'
 import LoyaltyService from '../../../../modules/loyalty/service'
 
-export const OPTIONS = async (_req: MedusaRequest, res: MedusaResponse) => {
-  const origins = process.env.STORE_CORS?.split(',').map(o=>o.trim()).filter(Boolean)
-  const origin = origins?.[0] || '*'
-  res.setHeader('Access-Control-Allow-Origin', origin)
+export const OPTIONS = async (req: MedusaRequest, res: MedusaResponse) => {
+  const reqOrigin = (req.headers.origin as string) || ''
+  const allowed = (process.env.STORE_CORS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
+  if (reqOrigin && allowed.includes(reqOrigin)) {
+    res.setHeader('Access-Control-Allow-Origin', reqOrigin)
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-publishable-api-key')
   res.setHeader('Access-Control-Allow-Credentials', 'true')
