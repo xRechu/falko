@@ -29,41 +29,45 @@ export const sdk = new Medusa({
 
 // Wymuś wysyłanie cookies (sesji) przy każdym request
 try {
-  // Ustawienie credentials dla wszystkich requestów
-  const originalFetch = (sdk as any).client.request.bind((sdk as any).client);
-  
-  (sdk as any).client.request = async (path: string, options: RequestInit = {}) => {
-    const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '';
-    // Try to read bearer from storage if present (fallback when cookies are blocked)
-    let bearer: string | null = null;
-    try {
-      if (typeof window !== 'undefined') {
-        bearer = localStorage.getItem('medusa_auth_token') || sessionStorage.getItem('medusa_auth_token');
-      }
-    } catch {}
-    const enhancedOptions: RequestInit = {
-      ...options,
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-publishable-api-key': pubKey,
-        ...(bearer ? { 'Authorization': `Bearer ${bearer}` } : {}),
-        ...(options.headers || {}),
-      },
+  // Sprawdź czy jesteśmy w browser environment i czy SDK ma client z request
+  if (typeof window !== 'undefined' && (sdk as any).client?.request) {
+    const originalFetch = (sdk as any).client.request.bind((sdk as any).client);
+    
+    (sdk as any).client.request = async (path: string, options: RequestInit = {}) => {
+      const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '';
+      // Try to read bearer from storage if present (fallback when cookies are blocked)
+      let bearer: string | null = null;
+      try {
+        if (typeof window !== 'undefined') {
+          bearer = localStorage.getItem('medusa_auth_token') || sessionStorage.getItem('medusa_auth_token');
+        }
+      } catch {}
+      const enhancedOptions: RequestInit = {
+        ...options,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-publishable-api-key': pubKey,
+          ...(bearer ? { 'Authorization': `Bearer ${bearer}` } : {}),
+          ...(options.headers || {}),
+        },
+      };
+      
+      console.log(`🌐 SDK Request to: ${path}`, {
+        ...enhancedOptions,
+        headers: {
+          ...enhancedOptions.headers,
+          'x-publishable-api-key': pubKey ? `${pubKey.substring(0, 10)}...` : 'NOT SET'
+        }
+      });
+      
+      return originalFetch(path, enhancedOptions);
     };
     
-    console.log(`🌐 SDK Request to: ${path}`, {
-      ...enhancedOptions,
-      headers: {
-        ...enhancedOptions.headers,
-        'x-publishable-api-key': pubKey ? `${pubKey.substring(0, 10)}...` : 'NOT SET'
-      }
-    });
-    
-    return originalFetch(path, enhancedOptions);
-  };
-  
-  console.log('✅ SDK fetch credentials=include oraz x-publishable-api-key ustawione');
+    console.log('✅ SDK fetch credentials=include oraz x-publishable-api-key ustawione');
+  } else {
+    console.log('⚠️ SDK enhancements pomijane (server-side lub brak client.request)');
+  }
 } catch (e) {
   console.warn('⚠️ Nie udało się ustawić SDK enhancements', e);
 }
@@ -144,7 +148,7 @@ export const TokenManager = {
 console.log('🔧 Medusa JS SDK config:', {
   baseUrl: API_CONFIG.MEDUSA_BACKEND_URL,
   publishableKey: API_CONFIG.MEDUSA_PUBLISHABLE_KEY ? API_CONFIG.MEDUSA_PUBLISHABLE_KEY.substring(0, 10) + '...' : 'NOT SET',
-  authType: 'jwt',
+  authType: 'session',
   debug: process.env.NODE_ENV === 'development'
 });
 
