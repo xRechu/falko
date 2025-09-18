@@ -15,10 +15,8 @@ export function corsMiddleware(
   // Allowed origins for CORS
   const allowedOrigins = [
     'http://localhost:3000',
-    'https://falko-frontend.pages.dev',
-    'https://falko-56m.pages.dev',
-    'https://falkoproject.com',
-    'https://www.falkoproject.com'
+    'https://falkoprojects.com',
+    'https://www.falkoprojects.com'
   ];
   
   // Check if origin is allowed

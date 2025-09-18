@@ -35,12 +35,12 @@ export const ADMIN_CORS = process.env.ADMIN_CORS || 'http://localhost:7000,http:
 /**
  * Auth CORS origins
  */
-export const AUTH_CORS = process.env.AUTH_CORS || 'http://localhost:3000,https://falko-frontend.pages.dev,https://falko-56m.pages.dev';
+export const AUTH_CORS = process.env.AUTH_CORS || 'http://localhost:3000,https://falkoprojects.com';
 
 /**
  * Store/frontend CORS origins
  */
-export const STORE_CORS = process.env.STORE_CORS || 'http://localhost:3000,https://falko-frontend.pages.dev,https://falko-56m.pages.dev';
+export const STORE_CORS = process.env.STORE_CORS || 'http://localhost:3000,https://falkoprojects.com';
 
 /**
  * JWT Secret used for signing JWT tokens

@@ -5,17 +5,17 @@ compatibility_flags = ["nodejs_compat"]
 
 # Environment variables dla build-time (dostępne podczas next build)
 [vars]
-NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app"
+NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://api.falkoprojects.com"
 NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = "pk_632110d4efe86eaab2fe4a48f2cabbbbdc7617faf602fa68d7322123190109ad"
 NEXT_PUBLIC_FEATURES_INVENTORY = "0"
 NEXT_PUBLIC_FEATURES_PRICING = "0"
 
 # Environment-specific overrides (opcjonalnie)
 [env.preview]
-vars = { NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app" }
+vars = { NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://api.falkoprojects.com" }
 
 [env.production] 
-vars = { NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://backend-server-production-030d.up.railway.app", NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = "pk_632110d4efe86eaab2fe4a48f2cabbbbdc7617faf602fa68d7322123190109ad" }
+vars = { NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://api.falkoprojects.com", NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = "pk_632110d4efe86eaab2fe4a48f2cabbbbdc7617faf602fa68d7322123190109ad" }
 
 
 

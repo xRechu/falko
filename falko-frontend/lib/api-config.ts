@@ -5,7 +5,7 @@
  */
 
 const isProd = process.env.NODE_ENV === 'production'
-const rawMedusa = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
+const rawMedusa = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'https://api.falkoprojects.com'
 
 function normalize(url?: string) {
   return url ? url.replace(/\/+$/, '') : url
