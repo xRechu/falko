@@ -4,15 +4,13 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { 
   loginCustomer, 
   registerCustomer, 
-  getCustomer, 
-  logoutCustomer, 
-  isAuthenticated,
-  clearAuthentication,
+  getCurrentCustomer as getCustomer, 
+  logoutCustomer,
+  isCustomerLoggedIn as isAuthenticated,
   type Customer,
   type LoginRequest,
   type RegisterRequest
-} from '@/lib/api/auth'; // Zmienione z auth-new na auth
-import { TokenManager } from '@/lib/medusa-client';
+} from '@/lib/api/auth-medusa-docs'; // Nowa implementacja zgodna z dokumentacją Medusa
 
 /**
  * Context dla zarządzania autentykacją użytkowników - Medusa.js 2.0 JS SDK
@@ -109,33 +107,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loadUser();
   }, []);
 
-  // Ładuje dane użytkownika jeśli token istnieje
+  // Ładuje dane użytkownika jeśli sesja istnieje
   const loadUser = async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const localToken = typeof window !== 'undefined' ? localStorage.getItem('medusa_auth_token') : null;
-      const sessionToken = typeof window !== 'undefined' ? sessionStorage.getItem('medusa_auth_token') : null;
-      const isRememberedFlag = typeof window !== 'undefined' ? localStorage.getItem('auth_remember') === 'true' : false;
-      const token = localToken || sessionToken;
+      console.log(' [AuthContext] Próbuję odzyskać sesję poprzez cookie (session auth)');
 
-      // Jeśli mamy token (przyszłościowo gdy przejdziemy z powrotem na JWT) – wstrzyknij
-      if (token) {
-        TokenManager.setInSDK(token);
-        console.log('🔑 [AuthContext] Token set in SDK (JWT mode)');
-      } else {
-        console.log('🔍 [AuthContext] Brak tokenu – próbuję odzyskać sesję poprzez cookie (session auth)');
-      }
-
-      // PROBA: zawsze próbuj pobrać dane klienta – nawet bez tokenu (cookie HttpOnly)
+      // Próbuj pobrać dane klienta – przez session cookies
       try {
         const response = await getCustomer();
-        if (response.data) {
-          dispatch({ type: 'SET_USER', payload: response.data });
+        if (response.data?.customer) {
+          dispatch({ type: 'SET_USER', payload: response.data.customer });
           console.log('✅ [AuthContext] Sesja przywrócona (cookie)');
           return;
         }
       } catch (e) {
-        console.warn('⚠️ [AuthContext] getCustomer bez tokenu nie powiódł się');
+        console.warn('⚠️ [AuthContext] getCustomer bez sesji nie powiódł się');
       }
 
       // Jeśli brak użytkownika – wyloguj lokalnie
@@ -223,14 +210,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      await logoutCustomer(); // JS SDK automatycznie usuwa token
+      await logoutCustomer(); // JS SDK automatycznie usuwa sesję
       clearRememberMe();
       dispatch({ type: 'LOGOUT' });
       console.log('✅ [JS SDK] User logged out successfully');
     } catch (error) {
       console.error('❌ [JS SDK] Logout error:', error);
       // Wyloguj lokalnie nawet jeśli API call failed
-      clearAuthentication();
       clearRememberMe();
       dispatch({ type: 'LOGOUT' });
     }

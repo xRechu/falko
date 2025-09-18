@@ -12,11 +12,11 @@ if (typeof window !== 'undefined') {
 
 /**
  * Medusa.js 2.0 JS SDK client dla komunikacji z backend API
- * Używa endpointu z .env.local (domyślnie http://localhost:9000)
+ * Używa session authentication zgodnie z dokumentacją Medusa
  * 
- * UWAGA: Ten klient automatycznie zarządza autoryzacją (JWT tokens)
+ * UWAGA: Ten klient automatycznie zarządza sesjami przez cookies
  * Po zalogowaniu przez sdk.auth.login(), wszystkie kolejne requesty
- * będą automatycznie uwierzytelnianie.
+ * będą automatycznie uwierzytelnianie przez session cookies.
  */
 export const sdk = new Medusa({
   baseUrl: API_CONFIG.MEDUSA_BACKEND_URL,
@@ -27,7 +27,7 @@ export const sdk = new Medusa({
   }
 });
 
-// Wymuś wysyłanie cookies (sesji) przy każdym request
+// Wymuś wysyłanie cookies (sesji) przy każdym request zgodnie z dokumentacją
 try {
   // Sprawdź czy jesteśmy w browser environment i czy SDK ma client z request
   if (typeof window !== 'undefined' && (sdk as any).client?.request) {
@@ -35,20 +35,14 @@ try {
     
     (sdk as any).client.request = async (path: string, options: RequestInit = {}) => {
       const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '';
-      // Try to read bearer from storage if present (fallback when cookies are blocked)
-      let bearer: string | null = null;
-      try {
-        if (typeof window !== 'undefined') {
-          bearer = localStorage.getItem('medusa_auth_token') || sessionStorage.getItem('medusa_auth_token');
-        }
-      } catch {}
+      
+      // Dla session auth używamy tylko cookies - bez dodawania tokenów JWT
       const enhancedOptions: RequestInit = {
         ...options,
-        credentials: 'include',
+        credentials: 'include', // Kluczowe dla session cookies
         headers: {
           'Content-Type': 'application/json',
           'x-publishable-api-key': pubKey,
-          ...(bearer ? { 'Authorization': `Bearer ${bearer}` } : {}),
           ...(options.headers || {}),
         },
       };
@@ -72,85 +66,15 @@ try {
   console.warn('⚠️ Nie udało się ustawić SDK enhancements', e);
 }
 
-// Helper do ręcznego zarządzania tokenami w localStorage
-export const TokenManager = {
-  save: (token: string, rememberMe: boolean = false) => {
-    if (typeof window !== 'undefined') {
-      const storage = rememberMe ? localStorage : sessionStorage;
-      console.log('💾 [TokenManager.save] Saving token to', rememberMe ? 'localStorage' : 'sessionStorage');
-      console.log('💾 [TokenManager.save] Token length:', token.length);
-      console.log('💾 [TokenManager.save] Token preview:', token.substring(0, 20) + '...');
-      
-      storage.setItem('medusa_auth_token', token);
-      
-      // Weryfikuj czy token został zapisany
-      const saved = storage.getItem('medusa_auth_token');
-      console.log('💾 [TokenManager.save] Verification - saved token:', saved ? `${saved.substring(0, 20)}...` : 'null');
-      console.log('💾 [TokenManager.save] Save successful:', !!saved && saved === token);
-    } else {
-      console.error('💾 [TokenManager.save] Window not available - cannot save token');
-    }
-  },
-  
-  get: () => {
-    if (typeof window !== 'undefined') {
-      const localToken = localStorage.getItem('medusa_auth_token');
-      const sessionToken = sessionStorage.getItem('medusa_auth_token');
-      
-      const token = localToken || sessionToken;
-      
-      // Tylko loguj jeśli nie ma tokena
-      if (!token) {
-        console.log('🔍 [TokenManager.get] No token found in storage');
-      }
-      
-      return token;
-    }
-    return null;
-  },
-  
-  remove: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('medusa_auth_token');
-      sessionStorage.removeItem('medusa_auth_token');
-      console.log('🗑️ Token removed from storage');
-    }
-  },
-  
-  // Ustawia token w SDK dla kolejnych requestów
-  setInSDK: (token: string) => {
-    if (!token || token.startsWith('fake_token_')) {
-      console.log('⏭️ Pomijam ustawianie tokenu (brak realnego tokenu JWT)');
-      return;
-    }
-    try {
-      console.log('🔑 Setting real token in SDK...', token.substring(0, 20) + '...');
-      if ((sdk as any).client && (sdk as any).client.setHeaders) {
-        (sdk as any).client.setHeaders({ 'Authorization': `Bearer ${token}` });
-      }
-    } catch (error) {
-      console.error('❌ Failed to set token in SDK:', error);
-    }
-  },
-  
-  // Inicjalizuj token z storage przy starcie
-  initFromStorage: () => {
-    const token = TokenManager.get();
-    if (token) {
-      TokenManager.setInSDK(token);
-      console.log('🔄 Token loaded from storage and set in SDK');
-      return token;
-    }
-    return null;
-  }
-};
-
 console.log('🔧 Medusa JS SDK config:', {
   baseUrl: API_CONFIG.MEDUSA_BACKEND_URL,
   publishableKey: API_CONFIG.MEDUSA_PUBLISHABLE_KEY ? API_CONFIG.MEDUSA_PUBLISHABLE_KEY.substring(0, 10) + '...' : 'NOT SET',
   authType: 'session',
   debug: process.env.NODE_ENV === 'development'
 });
+
+// Export tylko SDK - session auth jest zarządzany automatycznie przez cookies
+export default sdk;
 
 // Eksportuj też stary alias dla kompatybilności
 export const medusaClient = sdk;

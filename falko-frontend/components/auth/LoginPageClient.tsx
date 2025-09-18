@@ -16,7 +16,7 @@ import { RateLimitWarning } from './RateLimitWarning';
 import { useAuth } from '@/lib/context/auth-context';
 import { useEmailValidation } from '@/lib/hooks/useEmailValidation';
 import { useRateLimit } from '@/lib/hooks/useRateLimit';
-import { SessionManager } from '@/lib/auth-session';
+import { getRememberedEmail, isRememberMeEnabled } from '@/lib/api/auth-medusa-docs';
 import { toast } from 'sonner';
 
 export default function LoginPageClient() {
@@ -40,8 +40,8 @@ export default function LoginPageClient() {
   
   // Load remembered email and remember me state on component mount
   useEffect(() => {
-    const rememberedEmail = SessionManager.getRememberedEmail();
-    const shouldRemember = SessionManager.shouldRememberUser();
+    const rememberedEmail = getRememberedEmail();
+    const shouldRemember = isRememberMeEnabled();
     
     if (rememberedEmail) {
       setEmail(rememberedEmail);
@@ -83,9 +83,6 @@ export default function LoginPageClient() {
       
       if (result.success) {
         toast.success('Zalogowano pomyślnie!');
-        
-        // Log session info for debugging
-        const sessionStatus = SessionManager.getSessionStatus();
         
         router.push('/sklep');
       } else {
