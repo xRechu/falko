@@ -83,60 +83,25 @@ export async function loginCustomer(credentials: LoginRequest, rememberMe: boole
  */
 export async function registerCustomer(userData: RegisterRequest): Promise<ApiResponse<{ customer: Customer }>> {
   try {
-    console.log('🔄 Registering customer via SDK:', userData.email);
+    console.log('🔄 Registering customer via SDK (following official docs):', userData.email);
     
-    // Krok 1: Próba rejestracji
-    const registrationResult = await sdk.auth.register("customer", "emailpass", {
+    // Krok 1: Próba rejestracji identity (zgodnie z dokumentacją Medusa)
+    await sdk.auth.register("customer", "emailpass", {
       email: userData.email,
       password: userData.password,
     });
     
-    if (registrationResult) {
-      // Krok 2: Tworzenie profilu customera
-      try {
-        const customerCreateResponse = await sdk.store.customer.create({
-          email: userData.email,
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          phone: userData.phone,
-        });
-        
-        console.log('✅ Customer registered and profile created successfully via SDK');
-        
-        return { data: { customer: customerCreateResponse.customer as Customer } };
-        
-      } catch (createError: any) {
-        console.warn('Customer registered but profile creation failed:', createError);
-        
-        // Fallback - try to retrieve customer
-        try {
-          return { data: { customer: (await sdk.store.customer.retrieve()).customer as Customer } };
-        } catch (retrieveError: any) {
-          return {
-            data: {
-              customer: {
-                id: 'new_customer',
-                email: userData.email,
-                first_name: userData.first_name,
-                last_name: userData.last_name,
-              } as Customer
-            }
-          };
-        }
-      }
-    }
-    
-    throw new Error('Registration failed - no result returned');
+    console.log('✅ Registration token obtained successfully');
     
   } catch (error: any) {
     const fetchError = error as FetchError;
     
     // Zgodnie z dokumentacją: handle case where email already exists
-    if (fetchError.statusText === "Unauthorized" && fetchError.message === "Identity with email already exists") {
-      console.log('Email already exists, trying login flow as per Medusa docs...');
+    if (fetchError.message?.includes("Identity with email already exists")) {
+      console.log('📧 Email already exists, trying login flow as per Medusa docs...');
       
       try {
-        // Krok 3: Login approach for existing identity (dokumentacja Medusa)
+        // Login flow dla istniejącego identity (dokumentacja Medusa)
         const loginResult = await sdk.auth.login("customer", "emailpass", {
           email: userData.email,
           password: userData.password,
@@ -160,31 +125,7 @@ export async function registerCustomer(userData: RegisterRequest): Promise<ApiRe
           };
         }
         
-        // Spróbuj stworzyć profil customera (może nie istnieje jeszcze)
-        try {
-          const customerCreateResponse = await sdk.store.customer.create({
-            email: userData.email,
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            phone: userData.phone,
-          });
-          
-          return { data: { customer: customerCreateResponse.customer as Customer } };
-          
-        } catch (createError: any) {
-          // Profil prawdopodobnie już istnieje, pobierz go
-          try {
-            const existingCustomer = await sdk.store.customer.retrieve();
-            return { data: { customer: existingCustomer.customer as Customer } };
-          } catch (retrieveError: any) {
-            return {
-              error: {
-                message: 'Błąd podczas pobierania danych użytkownika.',
-                status: 500
-              }
-            };
-          }
-        }
+        console.log('✅ Login successful for existing identity');
         
       } catch (loginError: any) {
         return {
@@ -194,17 +135,49 @@ export async function registerCustomer(userData: RegisterRequest): Promise<ApiRe
           }
         };
       }
+    } else {
+      // Inne błędy rejestracji
+      console.error('❌ Registration error:', error);
+      
+      return {
+        error: {
+          message: `Błąd rejestracji: ${error.message}` || 'Nie udało się zarejestrować użytkownika.',
+          status: 400
+        }
+      };
     }
+  }
+  
+  // Krok 2: Utwórz profil customera (mamy już token rejestracji lub login)
+  try {
+    const customerCreateResponse = await sdk.store.customer.create({
+      email: userData.email,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      phone: userData.phone,
+    });
     
-    // Inne błędy rejestracji
-    console.error('❌ Registration error:', error);
+    console.log('✅ Customer profile created successfully');
     
-    return {
-      error: {
-        message: `Błąd rejestracji: ${error.message}` || 'Nie udało się zarejestrować użytkownika.',
-        status: 400
-      }
-    };
+    return { data: { customer: customerCreateResponse.customer as Customer } };
+    
+  } catch (createError: any) {
+    console.warn('Customer profile creation failed, trying to retrieve existing:', createError);
+    
+    // Może profil już istnieje, spróbuj go pobrać
+    try {
+      const existingCustomer = await sdk.store.customer.retrieve();
+      console.log('✅ Retrieved existing customer profile');
+      return { data: { customer: existingCustomer.customer as Customer } };
+    } catch (retrieveError: any) {
+      console.error('Failed to retrieve customer after registration:', retrieveError);
+      return {
+        error: {
+          message: 'Rejestracja się udała, ale nie udało się utworzyć profilu. Spróbuj się zalogować.',
+          status: 400
+        }
+      };
+    }
   }
 }
 
