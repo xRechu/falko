@@ -85,13 +85,24 @@ export async function registerCustomer(userData: RegisterRequest): Promise<ApiRe
   try {
     console.log('🔄 Registering customer via SDK (following official docs):', userData.email);
     
-    // Krok 1: Próba rejestracji identity (zgodnie z dokumentacją Medusa)
+    // Krok 1: Rejestracja identity (zgodnie z dokumentacją Medusa)
+    // auth.register() automatycznie daje token do kolejnych requestów
     await sdk.auth.register("customer", "emailpass", {
       email: userData.email,
       password: userData.password,
     });
     
-    console.log('✅ Registration token obtained successfully');
+    console.log('✅ Registration successful - checking if auth works...');
+    
+    // DEBUG: Sprawdź czy możemy pobrać aktualnego customera (test authentication)
+    try {
+      const testAuth = await sdk.store.customer.retrieve();
+      console.log('✅ Auth test successful - customer already exists:', testAuth.customer?.email);
+      return { data: { customer: testAuth.customer as Customer } };
+    } catch (authTestError: any) {
+      console.log('❌ Auth test failed after registration:', authTestError.message);
+      console.log('This suggests auth.register() did not create session - this is the bug!');
+    }
     
   } catch (error: any) {
     const fetchError = error as FetchError;
@@ -148,7 +159,7 @@ export async function registerCustomer(userData: RegisterRequest): Promise<ApiRe
     }
   }
   
-  // Krok 2: Utwórz profil customera (mamy już token rejestracji lub login)
+  // Krok 2: Utwórz profil customera (zgodnie z docs - auth.register daje token)
   try {
     const customerCreateResponse = await sdk.store.customer.create({
       email: userData.email,
