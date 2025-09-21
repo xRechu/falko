@@ -48,9 +48,9 @@ const medusaConfig = {
       options: {
         providers: [
           {
-            id: 'customer',
-            provisioner: 'emailpass',
-            // Możesz dodać politykę haseł, MFA itp. wg dokumentacji
+            id: 'emailpass',
+            resolve: '@medusajs/auth-emailpass',
+            resources: ['customer']
           }
         ]
       }
