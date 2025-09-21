@@ -43,6 +43,19 @@ const medusaConfig = {
   },
   modules: [
     {
+      key: Modules.AUTH,
+      resolve: '@medusajs/auth',
+      options: {
+        providers: [
+          {
+            id: 'customer',
+            provisioner: 'emailpass',
+            // Możesz dodać politykę haseł, MFA itp. wg dokumentacji
+          }
+        ]
+      }
+    },
+    {
       key: Modules.FILE,
       resolve: '@medusajs/file',
       options: {

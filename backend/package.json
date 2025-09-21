@@ -28,6 +28,7 @@
     "@medusajs/dashboard": "2.8.8",
     "@medusajs/framework": "2.8.8",
     "@medusajs/medusa": "2.8.8",
+    "@medusajs/auth": "2.8.8",
     "@medusajs/notification-sendgrid": "2.8.8",
     "@agilo/medusa-analytics-plugin": "^1.0.0",
     "@medusajs/file-s3": "2.8.8",
