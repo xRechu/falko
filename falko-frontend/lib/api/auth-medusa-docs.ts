@@ -1,4 +1,5 @@
 import { sdk } from '@/lib/medusa-client';
+import { API_CONFIG } from '@/lib/api-config';
 import type { HttpTypes } from "@medusajs/types";
 import { FetchError } from "@medusajs/js-sdk";
 
@@ -38,6 +39,42 @@ export interface ApiResponse<T> {
  * https://docs.medusajs.com/resources/storefront-development/customers/login
  */
 export async function loginCustomer(credentials: LoginRequest, rememberMe: boolean = false): Promise<ApiResponse<{ customer: Customer }>> {
+  try {
+    console.log('🔄 Logging in customer via SDK (session mode):', credentials.email);
+
+    // Krok 1: uzyskaj token identity od providera
+    const res = await sdk.auth.login(
+      "customer",
+      "emailpass",
+      { email: credentials.email, password: credentials.password }
+    ) as any;
+
+    const token = typeof res === 'string' ? res : res?.token;
+    if (!token) throw new Error('Provider did not return token');
+
+    // Krok 2: wymiana tokenu na sesję (ustawi Set-Cookie)
+    const sessionResp = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/auth/session`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || ''
+      },
+      credentials: 'include'
+    });
+    if (!sessionResp.ok) {
+      const t = await sessionResp.text().catch(()=> '');
+      throw new Error(`Session exchange failed: ${sessionResp.status} ${t}`);
+    }
+
+    // Krok 3: pobierz dane klienta
+    const customerResponse = await sdk.store.customer.retrieve();
+    return { data: { customer: customerResponse.customer as Customer } };
+  } catch (error: any) {
+    console.error('❌ loginCustomer SDK error:', error);
+    return { error: { message: error.message || 'Błąd logowania', status: 401 } };
+  }
+}
   try {
     console.log('🔄 Logging in customer via SDK (session mode):', credentials.email);
     
@@ -86,6 +123,66 @@ export async function loginCustomer(credentials: LoginRequest, rememberMe: boole
  * https://docs.medusajs.com/resources/storefront-development/customers/register
  */
 export async function registerCustomer(userData: RegisterRequest): Promise<ApiResponse<{ customer: Customer }>> {
+  try {
+    console.log('🔄 Registering customer via SDK (following official docs):', userData.email);
+
+    // 1) Rejestracja identity → token
+    const regRes = await sdk.auth.register(
+      "customer",
+      "emailpass",
+      { email: userData.email, password: userData.password }
+    ) as any;
+    const token = typeof regRes === 'string' ? regRes : regRes?.token;
+    if (!token) throw new Error('Provider did not return token');
+
+    // 2) Utwórz profil klienta z tokenem identity
+    const createResp = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/store/customers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || ''
+      },
+      body: JSON.stringify({
+        email: userData.email,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        phone: userData.phone
+      }),
+      credentials: 'include'
+    });
+    if (!createResp.ok) {
+      const t = await createResp.text().catch(()=> '');
+      throw new Error(`Customer create failed: ${createResp.status} ${t}`);
+    }
+
+    // 3) Wymień token na sesję
+    const sessionResp = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/auth/session`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'x-publishable-api-key': API_CONFIG.MEDUSA_PUBLISHABLE_KEY || ''
+      },
+      credentials: 'include'
+    });
+    if (!sessionResp.ok) {
+      const t = await sessionResp.text().catch(()=> '');
+      throw new Error(`Session exchange failed: ${sessionResp.status} ${t}`);
+    }
+
+    // 4) Pobierz dane klienta
+    const me = await sdk.store.customer.retrieve();
+    return { data: { customer: me.customer as Customer } };
+
+  } catch (error: any) {
+    console.error('❌ Registration error:', error);
+    return {
+      error: { message: error.message || 'Błąd rejestracji', status: 400 }
+    };
+  }
+}
   try {
     console.log('🔄 Registering customer via SDK (following official docs):', userData.email);
     
