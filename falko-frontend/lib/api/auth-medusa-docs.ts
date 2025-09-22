@@ -43,12 +43,12 @@ export async function loginCustomer(credentials: LoginRequest, rememberMe: boole
     
     // Krok 1: Logowanie przez SDK (automatycznie zarządza session cookies)
     const loginResult = await sdk.auth.login(
+      "customer",
       "emailpass",
       {
         email: credentials.email,
         password: credentials.password,
-      },
-      { actor_type: "customer" }
+      }
     );
     
     console.log('✅ SDK login raw response keys:', Object.keys(loginResult || {}));
@@ -91,23 +91,23 @@ export async function registerCustomer(userData: RegisterRequest): Promise<ApiRe
     
     // 1) Zarejestruj tożsamość (identity). Zwracana wartość NIE tworzy sesji cookie.
     await sdk.auth.register(
+      "customer",
       "emailpass",
       {
         email: userData.email,
         password: userData.password,
-      },
-      { actor_type: "customer" }
+      }
     );
 
     // 2) Natychmiast zaloguj użytkownika, aby ustawić ciasteczko sesyjne (session auth)
     try {
       await sdk.auth.login(
+        "customer",
         "emailpass",
         {
           email: userData.email,
           password: userData.password,
-        },
-        { actor_type: "customer" }
+        }
       );
       console.log('✅ Login after registration succeeded (session cookie set)');
     } catch (e: any) {
