@@ -50,7 +50,15 @@ const medusaConfig = {
           {
             id: 'emailpass',
             resolve: '@medusajs/auth-emailpass',
-            resources: ['customer']
+            resources: ['customer'],
+            is_default: true,
+            options: {
+              cookie: {
+                sameSite: 'none',
+                secure: true,
+                domain: '.falkoprojects.com'
+              }
+            }
           }
         ]
       }
