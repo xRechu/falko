@@ -1,3 +1,4 @@
+export const runtime = 'edge'
 import { NextResponse } from 'next/server'
 import { setAuthCookieOnResponse } from '@/lib/server-auth'
 import { API_CONFIG } from '@/lib/api-config'
