@@ -8,7 +8,9 @@ export async function POST(req: Request) {
     const { email, password, rememberMe } = await req.json()
     // Use Medusa SDK to obtain JWT
     const result: any = await (sdk as any).auth.login('customer', 'emailpass', { email, password })
-    const token = typeof result === 'string' ? result : result?.token || result?.access_token || result?.jwt
+    const token = typeof result === 'string'
+      ? result
+      : (result?.location || result?.token || result?.access_token || result?.jwt)
     if (!token) return NextResponse.json({ message: 'Brak tokenu' }, { status: 401 })
 
     const res = NextResponse.json({ ok: true })
