@@ -107,22 +107,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loadUser();
   }, []);
 
-  // Ładuje dane użytkownika jeśli sesja istnieje
+  // Ładuje dane użytkownika jeśli mamy ważny JWT w HttpOnly cookie
   const loadUser = async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      console.log(' [AuthContext] Próbuję odzyskać sesję poprzez cookie (session auth)');
+      console.log(' [AuthContext] Próba odzyskania sesji (JWT cookie)');
 
-      // Próbuj pobrać dane klienta – przez session cookies
+      // Pobierz dane klienta przez lokalne API, które dodaje Authorization z cookie
       try {
         const response = await getCustomer();
         if (response.data?.customer) {
           dispatch({ type: 'SET_USER', payload: response.data.customer });
-          console.log('✅ [AuthContext] Sesja przywrócona (cookie)');
+          console.log('✅ [AuthContext] Sesja przywrócona (JWT)');
           return;
         }
       } catch (e) {
-        console.warn('⚠️ [AuthContext] getCustomer bez sesji nie powiódł się');
+        console.warn('⚠️ [AuthContext] getCustomer nie powiódł się');
       }
 
       // Jeśli brak użytkownika – wyloguj lokalnie

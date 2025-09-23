@@ -12,22 +12,17 @@ if (typeof window !== 'undefined') {
 
 /**
  * Medusa.js 2.0 JS SDK client dla komunikacji z backend API
- * Używa session authentication zgodnie z dokumentacją Medusa
- * 
- * UWAGA: Ten klient automatycznie zarządza sesjami przez cookies
- * Po zalogowaniu przez sdk.auth.login(), wszystkie kolejne requesty
- * będą automatycznie uwierzytelnianie przez session cookies.
+ * Klient SDK bez trybu session. Autoryzację realizujemy nagłówkiem
+ * Authorization: Bearer <JWT> w wywołaniach serwerowych.
  */
 export const sdk = new Medusa({
   baseUrl: API_CONFIG.MEDUSA_BACKEND_URL,
   publishableKey: API_CONFIG.MEDUSA_PUBLISHABLE_KEY,
-  debug: process.env.NODE_ENV === 'development',
-  auth: {
-    type: 'session'
-  }
+  debug: process.env.NODE_ENV === 'development'
 });
 
-// Wymuś wysyłanie cookies (sesji) przy każdym request zgodnie z dokumentacją
+// Ustaw nagłówki wspólne (bez credentials). Authorization dodajemy lokalnie tam,
+// gdzie mamy dostęp do serwerowego cookie z JWT.
 try {
   // Sprawdź czy jesteśmy w browser environment i czy SDK ma client z request
   if (typeof window !== 'undefined' && (sdk as any).client?.request) {
@@ -36,10 +31,8 @@ try {
     (sdk as any).client.request = async (path: string, options: RequestInit = {}) => {
       const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || API_CONFIG.MEDUSA_PUBLISHABLE_KEY || '';
       
-      // Dla session auth używamy tylko cookies - bez dodawania tokenów JWT
       const enhancedOptions: RequestInit = {
         ...options,
-        credentials: 'include', // Kluczowe dla session cookies
         headers: {
           'Content-Type': 'application/json',
           'x-publishable-api-key': pubKey,
@@ -58,7 +51,7 @@ try {
       return originalFetch(path, enhancedOptions);
     };
     
-    console.log('✅ SDK fetch credentials=include oraz x-publishable-api-key ustawione');
+    console.log('✅ SDK client.request owinięty. Dodajemy x-publishable-api-key');
   } else {
     console.log('⚠️ SDK enhancements pomijane (server-side lub brak client.request)');
   }
@@ -69,11 +62,11 @@ try {
 console.log('🔧 Medusa JS SDK config:', {
   baseUrl: API_CONFIG.MEDUSA_BACKEND_URL,
   publishableKey: API_CONFIG.MEDUSA_PUBLISHABLE_KEY ? API_CONFIG.MEDUSA_PUBLISHABLE_KEY.substring(0, 10) + '...' : 'NOT SET',
-  authType: 'session',
+  authType: 'jwt-header',
   debug: process.env.NODE_ENV === 'development'
 });
 
-// Export tylko SDK - session auth jest zarządzany automatycznie przez cookies
+// Export tylko SDK - Authorization ustawiamy lokalnie w miejscach serwerowych
 export default sdk;
 
 // Eksportuj też stary alias dla kompatybilności
