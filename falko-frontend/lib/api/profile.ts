@@ -54,20 +54,14 @@ function transformStoreCustomerToProfile(customer: any): CustomerProfile {
  */
 export async function getCustomerProfile(): Promise<ApiResponse<CustomerProfile>> {
   try {
-    console.log('🔄 [JS SDK] getCustomerProfile - Fetching profile...');
-    
-    // Najpierw sprawdźmy czy SDK ma automatyczną autoryzację
-    try {
-      const response = await sdk.store.customer.retrieve();
-      console.log('✅ SDK has automatic authorization, customer profile:', response);
-      return { data: transformStoreCustomerToProfile(response.customer) };
-    } catch (authError) {
-      console.log('❌ SDK does not have automatic authorization, trying manual token management...');
-      console.log('Auth error:', authError);
-      
-      // Fallback: użyj ręcznego zarządzania tokenami
-      return await getProfileWithManualToken();
+    console.log('🔄 [API Proxy] getCustomerProfile - Fetching profile via /api/customer/profile');
+    const resp = await fetch('/api/customer/profile', { method: 'GET' })
+    if (!resp.ok) {
+      const msg = await resp.text().catch(() => '')
+      throw new Error(msg || 'Unauthorized')
     }
+    const data = await resp.json()
+    return { data: transformStoreCustomerToProfile(data.customer) }
   } catch (error: any) {
     console.error('❌ [JS SDK] getCustomerProfile error:', error);
     return { 
@@ -113,20 +107,18 @@ export async function updateCustomerProfile(
   updates: UpdateProfileRequest
 ): Promise<ApiResponse<CustomerProfile>> {
   try {
-    console.log('🔄 [JS SDK] updateCustomerProfile - Updating profile...', updates);
-    
-    // Najpierw sprawdźmy czy SDK ma automatyczną autoryzację
-    try {
-      const response = await sdk.store.customer.update(updates);
-      console.log('✅ SDK has automatic authorization, profile updated:', response);
-      return { data: transformStoreCustomerToProfile(response.customer) };
-    } catch (authError) {
-      console.log('❌ SDK does not have automatic authorization, trying manual token management...');
-      console.log('Auth error:', authError);
-      
-      // Fallback: użyj ręcznego zarządzania tokenami
-      return await updateProfileWithManualToken(updates);
+    console.log('🔄 [API Proxy] updateCustomerProfile - Updating via /api/customer/profile', updates);
+    const resp = await fetch('/api/customer/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    })
+    if (!resp.ok) {
+      const msg = await resp.text().catch(() => '')
+      throw new Error(msg || 'Update failed')
     }
+    const data = await resp.json()
+    return { data: transformStoreCustomerToProfile(data.customer) }
   } catch (error: any) {
     console.error('❌ [JS SDK] updateCustomerProfile error:', error);
     return { 
