@@ -7,7 +7,9 @@ export async function GET() {
   try {
     const authHeaders = await getAuthHeadersFromCookies()
     if (!authHeaders.Authorization) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    const resp = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/store/customers/addresses`, {
+    // Medusa v2: brak GET /store/customers/addresses
+    // Pobieramy adresy z /store/customers/me
+    const resp = await fetch(`${API_CONFIG.MEDUSA_BACKEND_URL}/store/customers/me`, {
       method: 'GET',
       headers: {
         ...authHeaders,
@@ -17,7 +19,8 @@ export async function GET() {
     })
     if (!resp.ok) return NextResponse.json({ message: await resp.text() }, { status: resp.status })
     const data = await resp.json()
-    return new NextResponse(JSON.stringify(data), {
+    const addresses = data?.customer?.addresses || []
+    return new NextResponse(JSON.stringify({ addresses }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
