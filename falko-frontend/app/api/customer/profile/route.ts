@@ -17,7 +17,15 @@ export async function GET() {
     })
     if (!resp.ok) return NextResponse.json({ message: await resp.text() }, { status: resp.status })
     const data = await resp.json()
-    return NextResponse.json(data)
+    return new NextResponse(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (e: any) {
     return NextResponse.json({ message: e?.message || 'Unauthorized' }, { status: 401 })
   }
@@ -41,7 +49,15 @@ export async function PATCH(req: Request) {
     })
     if (!resp.ok) return NextResponse.json({ message: await resp.text() }, { status: resp.status })
     const data = await resp.json()
-    return NextResponse.json(data)
+    return new NextResponse(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (e: any) {
     return NextResponse.json({ message: e?.message || 'Update failed' }, { status: 400 })
   }

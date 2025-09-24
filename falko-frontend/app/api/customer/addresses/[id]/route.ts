@@ -21,7 +21,15 @@ export async function PATCH(_req: Request, ctx: { params: { id: string } }) {
     })
     if (!resp.ok) return NextResponse.json({ message: await resp.text() }, { status: resp.status })
     const data = await resp.json()
-    return NextResponse.json(data)
+    return new NextResponse(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (e: any) {
     return NextResponse.json({ message: e?.message || 'Update failed' }, { status: 400 })
   }
@@ -41,7 +49,15 @@ export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
       }
     })
     if (!resp.ok) return NextResponse.json({ message: await resp.text() }, { status: resp.status })
-    return NextResponse.json({ success: true })
+    return new NextResponse(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (e: any) {
     return NextResponse.json({ message: e?.message || 'Delete failed' }, { status: 400 })
   }

@@ -81,10 +81,11 @@ export function validateAddress(
 }
 
 export async function getCustomerAddresses() {
-  const resp = await fetch('/api/customer/addresses', { method: 'GET' })
+  const resp = await fetch(`/api/customer/addresses?t=${Date.now()}` as any, { method: 'GET', cache: 'no-store' as any })
   if (!resp.ok) return { data: [] as CustomerAddress[] }
   const data = await resp.json()
-  return { data: (data?.addresses || []) as CustomerAddress[] }
+  const list = (data?.addresses || data?.customer?.addresses || []) as CustomerAddress[]
+  return { data: list }
 }
 
 export async function createCustomerAddress(address: CreateAddressRequest) {
