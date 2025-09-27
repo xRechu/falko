@@ -23,7 +23,7 @@ import type {
   PaymentSessionStatus,
 } from "@medusajs/framework/types"
 
-import { calculateRequestSignatureV3, getPaynowBaseUrl, verifyWebhookSignature } from "modules/paynow/service"
+import { calculateRequestSignatureV3, getPaynowBaseUrl, verifyWebhookSignature, sanitizeEnv } from "modules/paynow/service"
 
 type Options = {
   /** Optional merchant/project configuration if needed later */
@@ -53,9 +53,9 @@ class PaynowProviderService extends AbstractPaymentProvider<Options> {
    * - input.amount is in minor units (per Medusa BigNumber); Paynow expects integer minor units as string/number.
    */
   async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
-  const API_KEY = process.env.PAYNOW_API_KEY as string | undefined
-  const SIGNATURE_KEY = process.env.PAYNOW_SIGNATURE_KEY as string | undefined
-    const ENV = (process.env.PAYNOW_ENV as "sandbox" | "production") || "sandbox"
+  const API_KEY = sanitizeEnv(process.env.PAYNOW_API_KEY as any) || undefined
+  const SIGNATURE_KEY = sanitizeEnv(process.env.PAYNOW_SIGNATURE_KEY as any) || undefined
+    const ENV = (sanitizeEnv(process.env.PAYNOW_ENV as any) as "sandbox" | "production") || "sandbox"
 
     if (!API_KEY || !SIGNATURE_KEY) {
       throw new Error("Missing Paynow keys")

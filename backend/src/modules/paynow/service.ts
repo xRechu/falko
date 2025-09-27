@@ -10,6 +10,14 @@ export const getPaynowBaseUrl = (env: PaynowEnv = (process.env.PAYNOW_ENV as Pay
   return env === 'production' ? 'https://api.paynow.pl' : 'https://api.sandbox.paynow.pl'
 }
 
+// Helper to sanitize env values that may be set with quotes in hosting panels
+export const sanitizeEnv = (v: string | undefined | null): string => {
+  if (!v) return ''
+  const trimmed = String(v).trim()
+  // remove a single pair of wrapping quotes if present
+  return trimmed.replace(/^"(.+)"$/,'$1').replace(/^\'(.+)\'$/,'$1').trim()
+}
+
 export interface SignatureInputV3 {
   apiKey: string
   idempotencyKey: string

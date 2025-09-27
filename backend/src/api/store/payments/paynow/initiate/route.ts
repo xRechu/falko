@@ -1,13 +1,13 @@
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework'
 import crypto from 'crypto'
-import { calculateRequestSignatureV3, getPaynowBaseUrl } from 'modules/paynow/service'
+import { calculateRequestSignatureV3, getPaynowBaseUrl, sanitizeEnv } from 'modules/paynow/service'
 import type { PaynowInitiateBody } from 'modules/paynow/types'
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
-    const API_KEY = process.env.PAYNOW_API_KEY
-    const SIGNATURE_KEY = process.env.PAYNOW_SIGNATURE_KEY
-    const ENV = (process.env.PAYNOW_ENV as 'sandbox' | 'production') || 'sandbox'
+  const API_KEY = sanitizeEnv(process.env.PAYNOW_API_KEY)
+  const SIGNATURE_KEY = sanitizeEnv(process.env.PAYNOW_SIGNATURE_KEY)
+  const ENV = (sanitizeEnv(process.env.PAYNOW_ENV) as 'sandbox' | 'production') || 'sandbox'
     if (!API_KEY || !SIGNATURE_KEY) return res.status(500).json({ error: 'Missing Paynow keys' })
 
     const bodyInput = ((req as any).body as Partial<PaynowInitiateBody>) || {}
