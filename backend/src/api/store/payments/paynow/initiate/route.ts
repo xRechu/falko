@@ -11,18 +11,35 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     if (!API_KEY || !SIGNATURE_KEY) return res.status(500).json({ error: 'Missing Paynow keys' })
 
     const bodyInput = (req as any).body as Partial<PaynowInitiateBody> || {}
-    const { amount, currency = 'PLN', externalId, description, buyer, continueUrl, paymentMethodId, authorizationCode } = bodyInput
+  const { amount, currency = 'PLN', externalId, description, buyer, continueUrl, paymentMethodId, authorizationCode } = bodyInput
     if (!amount || !externalId || !description || !buyer?.email) return res.status(400).json({ error: 'Missing required fields' })
 
     const idempotencyKey = crypto.randomUUID()
     const baseUrl = getPaynowBaseUrl(ENV)
+
+    // Zadbaj o absolutny continueUrl (Paynow wymaga pełnego URL)
+    const FRONTEND_URL = process.env.FRONTEND_PUBLIC_URL || ''
+    const BACKEND_URL = process.env.BACKEND_PUBLIC_URL || ''
+    const makeAbsolute = (u?: string) => {
+      if (!u) return undefined
+      if (/^https?:\/\//i.test(u)) return u
+      if (FRONTEND_URL) {
+        try { return new URL(u, FRONTEND_URL).toString() } catch {}
+      }
+      if (BACKEND_URL) {
+        try { return new URL(u, BACKEND_URL).toString() } catch {}
+      }
+      return u
+    }
+
+    const resolvedContinueUrl = makeAbsolute(continueUrl) || `${BACKEND_URL}/store/carts/${encodeURIComponent(String(externalId))}/complete`
 
     const body: Record<string, any> = {
       amount: Number(amount),
       currency,
       externalId: String(externalId),
       description: String(description),
-      continueUrl: continueUrl || `${process.env.BACKEND_PUBLIC_URL || ''}/store/carts/${encodeURIComponent(String(externalId))}/complete`,
+      continueUrl: resolvedContinueUrl,
       buyer: { email: String(buyer.email) },
     }
     if (paymentMethodId) body.paymentMethodId = Number(paymentMethodId)

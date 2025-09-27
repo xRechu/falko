@@ -19,32 +19,40 @@ export async function POST(req: NextRequest) {
     if (auth) Object.assign(headers, auth)
 
     // 1) Ensure payment-collection exists for cart (Medusa v2 will auto-create if not provided)
-    const pcRes = await fetch(`${MEDUSA_BASE_URL}/store/payment-collections`, {
+    let pcId: string | undefined
+    try {
+      const pcRes = await fetch(`${MEDUSA_BASE_URL}/store/payment-collections`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ cart_id: cartId }),
-    })
-
-    // ok if 200/201; if 4xx because exists, that's fine
-    const pcJson = await pcRes.json().catch(() => ({}))
-    const paymentCollectionId = pcJson?.payment_collection?.id || pcJson?.id
+      })
+      const pcJson = await pcRes.json().catch(() => ({}))
+      pcId = pcJson?.payment_collection?.id || pcJson?.id
+    } catch (e) {
+      // best-effort: brak kolekcji nie powinien blokować reszty flow
+      console.warn('initiate-payment: payment-collection create failed (ignored)', e)
+    }
 
     // 2) Initiate payment session for that collection
-    const initUrl = paymentCollectionId
-      ? `${MEDUSA_BASE_URL}/store/payment-collections/${paymentCollectionId}/payment-sessions`
+    const initUrl = pcId
+      ? `${MEDUSA_BASE_URL}/store/payment-collections/${pcId}/payment-sessions`
       : `${MEDUSA_BASE_URL}/store/payment-collections/payment-sessions` // fallback
+    try {
+      const psRes = await fetch(initUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ provider_id: provider_id || 'pp_system_default', authorize: !!authorize }),
+      })
 
-    const psRes = await fetch(initUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ provider_id: provider_id || 'pp_system_default', authorize: !!authorize }),
-    })
-
-    const psText = await psRes.text()
-    const psData = (() => { try { return JSON.parse(psText) } catch { return { raw: psText } } })()
-    const resp = NextResponse.json(psData, { status: psRes.status })
-    resp.headers.set('Cache-Control', 'no-store')
-    return resp
+      const psText = await psRes.text()
+      const psData = (() => { try { return JSON.parse(psText) } catch { return { raw: psText } } })()
+      const resp = NextResponse.json(psData, { status: 200 }) // nawet gdy 4xx, nie blokuj UI
+      resp.headers.set('Cache-Control', 'no-store')
+      return resp
+    } catch (e) {
+      // total best-effort: zwróć 200, UI i tak kontynuuje płatność Paynow
+      return NextResponse.json({ ok: false, note: 'initiate payment session skipped' }, { status: 200 })
+    }
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Failed to initiate payment session' }, { status: 500 })
   }
