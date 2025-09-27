@@ -55,9 +55,10 @@ export default function CheckoutWithPayment(props: CheckoutWithPaymentProps = {}
       if (!cart) {
         throw new Error('Brak koszyka')
       }
-      const orderIdLocal = cart.id
-  // nie trzymaj orderId w stanie – przekazuj lokalnie
-      const totalAmount = Math.round(cart.total || 0)
+    const orderIdLocal = cart.id
+    // nie trzymaj orderId w stanie – przekazuj lokalnie
+    // Użyj subtotal jako fallback, bo total może być 0 przed wyborem dostawy/podatków
+    const totalAmount = Math.round((cart.total ?? cart.subtotal ?? 0) as number)
       console.log('� Cart ID:', orderIdLocal, 'Total:', totalAmount)
 
       // Zrób snapshot koszyka przed próbą płatności/finalizacji

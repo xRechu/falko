@@ -10,16 +10,58 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const ENV = (process.env.PAYNOW_ENV as 'sandbox' | 'production') || 'sandbox'
     if (!API_KEY || !SIGNATURE_KEY) return res.status(500).json({ error: 'Missing Paynow keys' })
 
-    const bodyInput = (req as any).body as Partial<PaynowInitiateBody> || {}
-  const { amount, currency = 'PLN', externalId, description, buyer, continueUrl, paymentMethodId, authorizationCode } = bodyInput
-    if (!amount || !externalId || !description || !buyer?.email) return res.status(400).json({ error: 'Missing required fields' })
+    const bodyInput = ((req as any).body as Partial<PaynowInitiateBody>) || {}
+    let { amount, currency = 'PLN', externalId, description, buyer, continueUrl, paymentMethodId, authorizationCode } = bodyInput
+
+    // Fallback: jeśli brakuje krytycznych pól, spróbujmy je uzupełnić na podstawie koszyka
+    const BACKEND_URL = process.env.BACKEND_PUBLIC_URL || ''
+    const FRONTEND_URL = process.env.FRONTEND_PUBLIC_URL || ''
+    if (!externalId) {
+      return res.status(400).json({ error: 'Missing required field: externalId' })
+    }
+
+    // Jeśli brak amount lub amount <= 0, pobierz total z koszyka
+    if (!amount || Number(amount) <= 0 || Number.isNaN(Number(amount))) {
+      try {
+        const cartRes = await fetch(`${BACKEND_URL}/store/carts/${encodeURIComponent(String(externalId))}`, {
+          headers: { Accept: 'application/json' },
+        })
+        if (cartRes.ok) {
+          const cartJson = await cartRes.json().catch(() => ({}))
+          const cartTotal = cartJson?.cart?.total ?? cartJson?.total
+          if (typeof cartTotal === 'number' && cartTotal > 0) {
+            amount = cartTotal
+          }
+          // E-mail z koszyka, jeśli nie podano w buyer
+          const cartEmail = cartJson?.cart?.email ?? cartJson?.email
+          if (!buyer?.email && cartEmail) {
+            buyer = { email: String(cartEmail) }
+          }
+        } else {
+          // optionally log non-ok, ale nie blokuj
+        }
+      } catch (e) {
+        // ignore fallback errors – walidacja niżej zadziała
+      }
+    }
+
+    // Domyślny opis zamówienia, jeśli nie podano
+    if (!description) description = `Zamówienie ${externalId}`
+    // Buyer e-mail wymagany przez Paynow – jeżeli nadal brak, błąd
+    const buyerEmail = buyer?.email
+    // Upewnij się, że amount jest liczbą > 0
+    const numericAmount = Number(amount)
+    if (!numericAmount || numericAmount <= 0 || !buyerEmail) {
+      const missing: string[] = []
+      if (!numericAmount || numericAmount <= 0) missing.push('amount')
+      if (!buyerEmail) missing.push('buyer.email')
+      return res.status(400).json({ error: 'Missing required fields', missing })
+    }
 
     const idempotencyKey = crypto.randomUUID()
     const baseUrl = getPaynowBaseUrl(ENV)
 
     // Zadbaj o absolutny continueUrl (Paynow wymaga pełnego URL)
-    const FRONTEND_URL = process.env.FRONTEND_PUBLIC_URL || ''
-    const BACKEND_URL = process.env.BACKEND_PUBLIC_URL || ''
     const makeAbsolute = (u?: string) => {
       if (!u) return undefined
       if (/^https?:\/\//i.test(u)) return u
@@ -32,15 +74,17 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       return u
     }
 
-    const resolvedContinueUrl = makeAbsolute(continueUrl) || `${BACKEND_URL}/store/carts/${encodeURIComponent(String(externalId))}/complete`
+    const resolvedContinueUrl = makeAbsolute(continueUrl) || (FRONTEND_URL
+      ? new URL(`/checkout/success?cart_id=${encodeURIComponent(String(externalId))}`, FRONTEND_URL).toString()
+      : `${BACKEND_URL}/store/carts/${encodeURIComponent(String(externalId))}/complete`)
 
     const body: Record<string, any> = {
-      amount: Number(amount),
+      amount: numericAmount,
       currency,
       externalId: String(externalId),
       description: String(description),
       continueUrl: resolvedContinueUrl,
-      buyer: { email: String(buyer.email) },
+      buyer: { email: String(buyerEmail) },
     }
     if (paymentMethodId) body.paymentMethodId = Number(paymentMethodId)
     if (authorizationCode) body.authorizationCode = String(authorizationCode)

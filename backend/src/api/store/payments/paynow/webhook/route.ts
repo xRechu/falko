@@ -17,19 +17,36 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const { paymentId, externalId, status } = payload || {}
     console.log('🔔 Paynow webhook (backend):', { paymentId, externalId, status })
 
-    // Auto-finalizacja koszyka po potwierdzeniu płatności
+    // Auto-finalizacja koszyka po potwierdzeniu płatności (z idempotencją)
     if (status === 'CONFIRMED' && externalId) {
       try {
         const backendUrl = process.env.BACKEND_PUBLIC_URL || ''
-        const url = `${backendUrl}/store/carts/${encodeURIComponent(String(externalId))}/complete`
-        const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-        const txt = await resp.text()
-        console.log('🧾 Cart complete via webhook:', resp.status, txt)
+        const cartUrl = `${backendUrl}/store/carts/${encodeURIComponent(String(externalId))}`
+        // 1) Sprawdź stan koszyka – jeśli już ukończony, nie powtarzaj
+        let alreadyCompleted = false
+        try {
+          const check = await fetch(cartUrl, { headers: { Accept: 'application/json' } })
+          if (check.ok) {
+            const cj = await check.json().catch(() => ({}))
+            const c = cj?.cart || cj
+            alreadyCompleted = Boolean(c?.completed_at || c?.completed || c?.state === 'completed' || c?.order_id)
+          }
+        } catch {}
+
+        if (alreadyCompleted) {
+          console.log('ℹ️ Cart already completed, skipping complete:', externalId)
+        } else {
+          const completeUrl = `${cartUrl}/complete`
+          const resp = await fetch(completeUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+          const txt = await resp.text()
+          console.log('🧾 Cart complete via webhook:', resp.status, txt)
+        }
       } catch (e) {
         console.error('⚠️ Failed to complete cart on webhook:', e)
       }
     }
 
+    res.setHeader('Cache-Control', 'no-store')
     return res.status(200).end()
   } catch (e) {
     console.error('Paynow webhook error (backend):', e)

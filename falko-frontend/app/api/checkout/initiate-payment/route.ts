@@ -18,6 +18,24 @@ export async function POST(req: NextRequest) {
     const auth = getAuthHeadersFromCookies()
     if (auth) Object.assign(headers, auth)
 
+    // Guard: nie inicjalizuj sesji płatności, gdy total koszyka <= 0
+    try {
+      const cartRes = await fetch(`${MEDUSA_BASE_URL}/store/carts/${encodeURIComponent(cartId)}`, {
+        headers,
+        cache: 'no-store',
+      })
+      if (cartRes.ok) {
+        const cartJson = await cartRes.json().catch(() => ({}))
+        const c = cartJson?.cart || cartJson
+        const total = Number(c?.total ?? 0)
+        if (!Number.isFinite(total) || total <= 0) {
+          const resp = NextResponse.json({ ok: true, skipped: true, reason: 'cart_total_is_zero' }, { status: 200 })
+          resp.headers.set('Cache-Control', 'no-store')
+          return resp
+        }
+      }
+    } catch {}
+
     // 1) Ensure payment-collection exists for cart (Medusa v2 will auto-create if not provided)
     let pcId: string | undefined
     try {
@@ -51,7 +69,9 @@ export async function POST(req: NextRequest) {
       return resp
     } catch (e) {
       // total best-effort: zwróć 200, UI i tak kontynuuje płatność Paynow
-      return NextResponse.json({ ok: false, note: 'initiate payment session skipped' }, { status: 200 })
+      const resp = NextResponse.json({ ok: true, skipped: true, note: 'initiate payment session skipped' }, { status: 200 })
+      resp.headers.set('Cache-Control', 'no-store')
+      return resp
     }
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Failed to initiate payment session' }, { status: 500 })
