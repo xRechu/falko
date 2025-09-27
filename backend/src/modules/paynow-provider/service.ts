@@ -177,31 +177,32 @@ class PaynowProviderService extends AbstractPaymentProvider<Options> {
         return { action: "not_supported", data: { session_id: "", amount: new BigNumber(0) } }
       }
 
-      const data = JSON.parse(raw)
-      const status = data?.status
-      const externalId = data?.externalId
-      const amount = new BigNumber(Number(data?.amount || 0))
+  const data = JSON.parse(raw)
+  const status = data?.status
+  const externalId = data?.externalId
+  const paymentId = data?.paymentId || data?.id
+  const amount = new BigNumber(Number(data?.amount || 0))
 
       if (status === "CONFIRMED") {
         return {
           action: "captured",
           data: {
-            // session_id links the event to the session/order; we pass externalId (cart id)
-            session_id: String(externalId || ""),
+            // session_id must match the stored PaymentSession id (we use Paynow paymentId)
+            session_id: String(paymentId || ""),
             amount,
           },
         }
       }
 
       if (status === "PENDING") {
-        return { action: "pending", data: { session_id: String(externalId || ""), amount: new BigNumber(0) } }
+        return { action: "pending", data: { session_id: String(paymentId || ""), amount: new BigNumber(0) } }
       }
 
       if (status === "REJECTED" || status === "ERROR" || status === "CANCELED") {
-        return { action: "canceled", data: { session_id: String(externalId || ""), amount: new BigNumber(0) } }
+        return { action: "canceled", data: { session_id: String(paymentId || ""), amount: new BigNumber(0) } }
       }
 
-      return { action: "not_supported", data: { session_id: String(externalId || ""), amount: new BigNumber(0) } }
+      return { action: "not_supported", data: { session_id: String(paymentId || externalId || ""), amount: new BigNumber(0) } }
     } catch (e) {
       return { action: "not_supported", data: { session_id: "", amount: new BigNumber(0) } }
     }
