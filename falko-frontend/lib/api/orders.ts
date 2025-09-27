@@ -154,12 +154,25 @@ export async function getCustomerOrders(
     };
   } catch (error: any) {
     console.error('❌ getCustomerOrders SDK error:', error);
-    return { 
-      error: { 
-        message: error.message || 'Błąd pobierania zamówień',
-        status: 400 
-      } 
-    };
+    // Fallback przez lokalne proxy (JWT z ciasteczka HttpOnly)
+    try {
+      const resp = await fetch(`/api/customer/orders?limit=${encodeURIComponent(String(limit))}&offset=${encodeURIComponent(String(offset))}&fields=${encodeURIComponent('*shipping_address,*billing_address,*items,*payments')}`)
+      if (!resp.ok) throw new Error(await resp.text())
+      const data = await resp.json()
+      return {
+        data: {
+          orders: (data?.orders || []).map(transformStoreOrderToOrder),
+          count: data?.count || 0
+        }
+      }
+    } catch (e: any) {
+      return { 
+        error: { 
+          message: e?.message || error.message || 'Błąd pobierania zamówień',
+          status: 400 
+        } 
+      };
+    }
   }
 }
 

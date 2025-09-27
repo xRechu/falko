@@ -20,17 +20,26 @@ export async function GET(req: NextRequest) {
     const r = await fetch(`${backendUrl}/payments/paynow/status?paymentId=${encodeURIComponent(paymentId)}` , {
       method: 'GET',
       headers: {
-        'Accept': '*/*',
+        'Accept': 'application/json',
         'x-publishable-api-key': pubKey,
       },
       cache: 'no-store',
     })
 
-    const text = await r.text()
-    return new Response(text, {
-      status: r.status,
+    // Normalize errors to a 200 response with status: null to avoid breaking checkout UX
+    if (!r.ok) {
+      return new Response(JSON.stringify({ status: null }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+      })
+    }
+
+    const data = await r.json().catch(() => ({})) as any
+    const status = data?.status ?? null
+    return new Response(JSON.stringify({ status }), {
+      status: 200,
       headers: {
-        'Content-Type': r.headers.get('content-type') || 'application/json',
+        'Content-Type': 'application/json',
         'Cache-Control': 'no-store',
       }
     })

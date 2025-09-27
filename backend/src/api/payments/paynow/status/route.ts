@@ -51,10 +51,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       if (r.status === 404) continue
     }
 
-    if (lastErrorStatus) {
-      return res.status(lastErrorStatus).json({ error: 'Paynow error', details: process.env.NODE_ENV === 'production' ? undefined : lastErrorBody })
-    }
-
+    // Do not propagate 4xx/5xx to the client to avoid breaking the UX
+    // If no environment/path returned a valid status, respond with null status (client will keep polling)
     return res.status(200).json({ status: null })
   } catch (e) {
     console.error('paynow status error:', e)
