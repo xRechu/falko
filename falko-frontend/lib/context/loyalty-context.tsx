@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from '@/lib/context/auth-context'
 import { toast } from 'sonner';
 import { 
   fetchCustomerLoyaltyPoints, 
@@ -119,6 +120,7 @@ const LoyaltyContext = createContext<LoyaltyContextType | null>(null);
 // Usunięto stare mocki nagród/historii – korzystamy z backendu i logiki opartej o wydatki
 
 export function LoyaltyProvider({ children }: { children: ReactNode }) {
+  const { state: auth } = useAuth()
   const [points, setPoints] = useState(0);
   const [pointsHistory, setPointsHistory] = useState<LoyaltyTransaction[]>([]);
   const [availableRewards, setAvailableRewards] = useState<LoyaltyReward[]>([]);
@@ -153,6 +155,12 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
   }
 
   const refreshPoints = async () => {
+    if (!auth?.isAuthenticated) {
+      // reset state for guests
+      setPoints(0)
+      setPointsHistory([])
+      return
+    }
     setLoading(true);
     setError(null);
     try {
@@ -171,6 +179,12 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
 
   // Prawdziwe dane o WYDATKACH z Medusa SDK
   const refreshSpend = async () => {
+    if (!auth?.isAuthenticated) {
+      setLifetimeSpent(0)
+      setLastOrderAt(null)
+      setTierState(nextTierInfoBySpend(0))
+      return
+    }
     try {
       const res = await getCustomerOrders(100, 0);
       const orders: Order[] = (res.data?.orders || []).filter(
@@ -209,6 +223,10 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshRewards = async () => {
+    if (!auth?.isAuthenticated) {
+      setAvailableRewards([])
+      return
+    }
     try {
       const data = await fetchLoyaltyRewards();
       const mappedRewards = data
@@ -244,6 +262,10 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
   };
 
   const redeemReward = async (rewardId: string): Promise<boolean> => {
+    if (!auth?.isAuthenticated) {
+      toast.error('Zaloguj się, aby korzystać z nagród')
+      return false
+    }
     const reward = availableRewards.find(r => r.id === rewardId);
     if (!reward) {
       toast.error('Nie znaleziono nagrody');
@@ -296,6 +318,26 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   };
+
+  // Reaguj na zmiany autoryzacji – ładuj dane tylko gdy użytkownik jest zalogowany
+  useEffect(() => {
+    (async () => {
+      if (auth?.isAuthenticated) {
+        await refreshPoints();
+        await refreshRewards();
+        await refreshSpend();
+      } else {
+        // wyczyść stan na logout/guest
+        setPoints(0)
+        setPointsHistory([])
+        setAvailableRewards([])
+        setLifetimeSpent(0)
+        setLastOrderAt(null)
+        setTierState(nextTierInfoBySpend(0))
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth?.isAuthenticated])
 
   const getPointsForOrder = (orderTotal: number): number => {
     // 1 punkt za każde 1 PLN
