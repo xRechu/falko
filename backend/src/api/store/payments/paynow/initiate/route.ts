@@ -78,6 +78,12 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       ? new URL(`/checkout/success?cart_id=${encodeURIComponent(String(externalId))}`, FRONTEND_URL).toString()
       : `${BACKEND_URL}/store/carts/${encodeURIComponent(String(externalId))}/complete`)
 
+    // Safe debug to help diagnose ProjectId/domain mismatches – no secrets
+    try {
+      const host = (() => { try { return new URL(resolvedContinueUrl).host } catch { return 'invalid-url' } })()
+      console.log(`[paynow:initiate] ENV=${ENV} base=${baseUrl} continueHost=${host} externalId=${externalId} amount=${numericAmount}`)
+    } catch {}
+
     const body: Record<string, any> = {
       amount: numericAmount,
       currency,
@@ -113,6 +119,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
     if (!response.ok) {
       const text = await response.text()
+      // Log details even in production (server logs only) to speed up diagnosis; do not expose in response
+      try { console.error(`[paynow:initiate] Paynow error ${response.status}: ${text}`) } catch {}
       return res.status(response.status).json({ error: 'Paynow error', details: process.env.NODE_ENV === 'production' ? undefined : text })
     }
 

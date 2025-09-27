@@ -94,7 +94,7 @@ class PaynowProviderService extends AbstractPaymentProvider<Options> {
       },
     }
 
-    const idempotencyKey = `${Date.now()}_${externalId}`
+  const idempotencyKey = `${Date.now()}_${externalId}`
     const signature = calculateRequestSignatureV3({
       apiKey: API_KEY,
       idempotencyKey,
@@ -106,8 +106,10 @@ class PaynowProviderService extends AbstractPaymentProvider<Options> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/json",
         "Api-Key": API_KEY,
         "Signature": signature,
+        "Idempotency-Key": idempotencyKey,
       },
       body: JSON.stringify(body),
     })
