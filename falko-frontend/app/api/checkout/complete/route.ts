@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'application/json',
       'x-publishable-api-key': MEDUSA_PUBLISHABLE_KEY || '',
     }
-    const auth = getAuthHeadersFromCookies()
-    if (auth) Object.assign(headers, auth)
+  const auth = await getAuthHeadersFromCookies()
+  if (auth) Object.assign(headers, auth)
 
     const res = await fetch(`${MEDUSA_BASE_URL}/store/carts/${encodeURIComponent(cartId)}/complete`, {
       method: 'POST',

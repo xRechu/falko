@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'application/json',
       'x-publishable-api-key': MEDUSA_PUBLISHABLE_KEY || '',
     }
-    const auth = getAuthHeadersFromCookies()
-    if (auth) Object.assign(headers, auth)
+  const auth = await getAuthHeadersFromCookies()
+  if (auth) Object.assign(headers, auth)
 
     // Ensure payment-collection exists (idempotent)
     let pcId: string | undefined

@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'application/json',
       'x-publishable-api-key': MEDUSA_PUBLISHABLE_KEY || '',
     }
-    const auth = getAuthHeadersFromCookies()
-    if (auth) Object.assign(headers, auth)
+  const auth = await getAuthHeadersFromCookies()
+  if (auth) Object.assign(headers, auth)
 
     // Guard: nie inicjalizuj sesji płatności, gdy total koszyka <= 0
     try {
