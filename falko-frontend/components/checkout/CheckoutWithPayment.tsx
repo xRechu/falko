@@ -175,34 +175,38 @@ export default function CheckoutWithPayment(props: CheckoutWithPaymentProps = {}
         await fetch('/api/checkout/initiate-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cartId: orderIdLocal, provider_id: 'pp_system_default', authorize: false })
+          body: JSON.stringify({ cartId: orderIdLocal, provider_id: 'paynow', authorize: false })
         })
       } catch (e) {
         console.warn('initiate-payment (online pre-create) failed', e)
       }
 
+      // Spróbuj użyć redirectUrl z Payment Session naszego providera
+      try {
+        const sessRes = await fetch('/api/checkout/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cartId: orderIdLocal })
+        })
+        if (sessRes.ok) {
+          const sess = await sessRes.json()
+          if (sess?.redirectUrl) {
+            window.location.href = sess.redirectUrl
+            return
+          }
+        }
+      } catch {}
+
+      // Fallback: bezpośrednie wywołanie Paynow initiate po backendowym route (utrzymane wstecznie)
       const paymentResp = await createPayment({
         order_id: orderIdLocal,
         return_url: returnUrl,
-        // pola niestandardowe obsługiwane w createPayment()
         ...( { amount: totalAmount, email: formData.email } as any ),
         ...(payment_method_id ? { payment_method_id } : {}),
         ...(authorization_code ? { authorization_code } : {}),
       })
-
-  if (!paymentResp) throw new Error('Błąd inicjalizacji płatności')
-
-      // Redirect gdy dostępny (Apple Pay / Google Pay / Pay-by-link)
+      if (!paymentResp) throw new Error('Błąd inicjalizacji płatności')
       if (paymentResp.redirectUrl) {
-        try {
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem('paynow_payment_id', paymentResp.transactionId)
-            sessionStorage.setItem('cart_id', orderIdLocal)
-            // Zapisz też w cookie (przetrwa nową kartę)
-            const cname = `paynow_pid_${orderIdLocal}`
-            document.cookie = `${encodeURIComponent(cname)}=${encodeURIComponent(paymentResp.transactionId)}; path=/; max-age=1800; samesite=lax`
-          }
-        } catch {}
         window.location.href = paymentResp.redirectUrl
         return
       }

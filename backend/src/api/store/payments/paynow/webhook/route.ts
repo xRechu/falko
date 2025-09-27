@@ -1,53 +1,31 @@
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework'
-import { verifyWebhookSignature } from 'modules/paynow/service'
-import type { PaynowWebhookPayload } from 'modules/paynow/types'
+import { Modules } from '@medusajs/framework/utils'
+import { processPaymentWorkflow } from '@medusajs/medusa/core-flows'
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
-    const SIGNATURE_KEY = process.env.PAYNOW_SIGNATURE_KEY
-    if (!SIGNATURE_KEY) return res.status(500).send('Missing signature key')
+    // Delegate to Payment Module: it will call our provider's getWebhookActionAndData
+    const paymentModuleService = req.scope.resolve(Modules.PAYMENT)
 
-    const signatureHeader = req.headers['signature'] as string | undefined || null
-    const rawBody = (req as any).rawBody || JSON.stringify(req.body || {})
+    const dataAndAction = await paymentModuleService.getWebhookActionAndData({
+      provider: 'paynow',
+      payload: {
+        data: (req.body || {}) as Record<string, unknown>,
+        rawData: (req as any).rawBody,
+        headers: req.headers as any,
+      },
+    })
 
-    const valid = verifyWebhookSignature(rawBody, signatureHeader, SIGNATURE_KEY)
-    if (!valid) return res.status(400).send('Invalid signature')
-
-    const payload: PaynowWebhookPayload = JSON.parse(rawBody)
-    const { paymentId, externalId, status } = payload || {}
-    console.log('🔔 Paynow webhook (backend):', { paymentId, externalId, status })
-
-    // Auto-finalizacja koszyka po potwierdzeniu płatności (z idempotencją)
-    if (status === 'CONFIRMED' && externalId) {
-      try {
-        const backendUrl = process.env.BACKEND_PUBLIC_URL || ''
-        const cartUrl = `${backendUrl}/store/carts/${encodeURIComponent(String(externalId))}`
-        // 1) Sprawdź stan koszyka – jeśli już ukończony, nie powtarzaj
-        let alreadyCompleted = false
-        try {
-          const check = await fetch(cartUrl, { headers: { Accept: 'application/json' } })
-          if (check.ok) {
-            const cj = await check.json().catch(() => ({}))
-            const c = cj?.cart || cj
-            alreadyCompleted = Boolean(c?.completed_at || c?.completed || c?.state === 'completed' || c?.order_id)
-          }
-        } catch {}
-
-        if (alreadyCompleted) {
-          console.log('ℹ️ Cart already completed, skipping complete:', externalId)
-        } else {
-          const completeUrl = `${cartUrl}/complete`
-          const resp = await fetch(completeUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-          const txt = await resp.text()
-          console.log('🧾 Cart complete via webhook:', resp.status, txt)
-        }
-      } catch (e) {
-        console.error('⚠️ Failed to complete cart on webhook:', e)
-      }
-    }
+    // Then run the core workflow that handles complete/capture/authorize
+    const result = await processPaymentWorkflow(req.scope).run({
+      input: {
+        action: dataAndAction.action,
+        data: dataAndAction.data,
+      },
+    })
 
     res.setHeader('Cache-Control', 'no-store')
-    return res.status(200).end()
+    return res.status(200).json({ ok: true, action: dataAndAction.action, result })
   } catch (e) {
     console.error('Paynow webhook error (backend):', e)
     return res.status(500).send('Internal Server Error')

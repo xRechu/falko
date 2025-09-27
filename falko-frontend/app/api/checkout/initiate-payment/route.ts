@@ -7,7 +7,7 @@ export const runtime = 'edge'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
-    const { cartId, provider_id, authorize } = body || {}
+  const { cartId, provider_id, authorize } = body || {}
 
     if (!cartId) return NextResponse.json({ error: 'Missing cartId' }, { status: 400 })
 
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       const psRes = await fetch(initUrl, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ provider_id: provider_id || 'pp_system_default', authorize: !!authorize }),
+        body: JSON.stringify({ provider_id: provider_id || 'paynow', authorize: !!authorize }),
       })
 
       const psText = await psRes.text()

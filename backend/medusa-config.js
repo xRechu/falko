@@ -130,7 +130,23 @@ const medusaConfig = {
         ]
       }
     }] : []),
-    // Brak Stripe/Payment providers na tym etapie (użyjemy Paynow plugin później)
+    // Payment Module with Paynow provider
+    {
+      key: Modules.PAYMENT,
+      resolve: '@medusajs/payment',
+      options: {
+        providers: [
+          {
+            resolve: './src/modules/paynow-provider',
+            id: 'paynow',
+            options: {
+              // projectId: process.env.PAYNOW_PROJECT_ID
+            }
+          },
+          // System default provider (pp_system_default) jest wbudowany – nie wymaga osobnego pakietu
+        ]
+      }
+    },
   ],
   plugins: [
     // Paynow plugin is implemented as store API routes and module in src/, no external resolve needed.
