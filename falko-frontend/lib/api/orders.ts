@@ -1,6 +1,5 @@
 import { API_CONFIG } from '@/lib/api-config';
 import { ApiResponse } from './products';
-import { sdk } from '@/lib/medusa-client';
 
 /**
  * API functions dla zarządzania zamówieniami użytkownika w Medusa.js 2.0 SDK
@@ -136,42 +135,25 @@ export async function getCustomerOrders(
   offset: number = 0
 ): Promise<ApiResponse<{ orders: Order[]; count: number }>> {
   try {
-    console.log('🔄 Fetching customer orders via SDK...');
-    
-    // SDK automatycznie zarządza tokenami i rozszerza pola
-    const response = await sdk.store.order.list({
-      limit,
-      offset,
-      fields: '*shipping_address,*billing_address,*items,*payments',
-    });
-
-    console.log('✅ Customer orders fetched successfully via SDK');
-    return { 
-      data: { 
-        orders: response.orders?.map(transformStoreOrderToOrder) || [], 
-        count: response.count || 0 
-      } 
-    };
+    // ZAWSZE używamy serwerowego proxy (czyta HttpOnly JWT i dodaje Authorization)
+    const resp = await fetch(`/api/customer/orders?limit=${encodeURIComponent(String(limit))}&offset=${encodeURIComponent(String(offset))}&fields=${encodeURIComponent('*shipping_address,*billing_address,*items,*payments')}`)
+    if (!resp.ok) {
+      const text = await resp.text()
+      throw new Error(text || 'Nie udało się pobrać zamówień (proxy)')
+    }
+    const data = await resp.json()
+    return {
+      data: {
+        orders: (data?.orders || []).map(transformStoreOrderToOrder),
+        count: data?.count || 0,
+      },
+    }
   } catch (error: any) {
-    console.error('❌ getCustomerOrders SDK error:', error);
-    // Fallback przez lokalne proxy (JWT z ciasteczka HttpOnly)
-    try {
-      const resp = await fetch(`/api/customer/orders?limit=${encodeURIComponent(String(limit))}&offset=${encodeURIComponent(String(offset))}&fields=${encodeURIComponent('*shipping_address,*billing_address,*items,*payments')}`)
-      if (!resp.ok) throw new Error(await resp.text())
-      const data = await resp.json()
-      return {
-        data: {
-          orders: (data?.orders || []).map(transformStoreOrderToOrder),
-          count: data?.count || 0
-        }
-      }
-    } catch (e: any) {
-      return { 
-        error: { 
-          message: e?.message || error.message || 'Błąd pobierania zamówień',
-          status: 400 
-        } 
-      };
+    return {
+      error: {
+        message: error?.message || 'Błąd pobierania zamówień',
+        status: 400,
+      },
     }
   }
 }
@@ -181,23 +163,20 @@ export async function getCustomerOrders(
  */
 export async function getOrderDetails(orderId: string): Promise<ApiResponse<Order>> {
   try {
-    console.log('🔄 Fetching order details for:', orderId, 'via SDK');
-    
-    // SDK automatycznie rozszerza potrzebne pola
-    const response = await sdk.store.order.retrieve(orderId, {
-      fields: '*items,*shipping_address,*billing_address,*payments,*items.variant',
-    });
-
-    console.log('✅ Order details fetched successfully via SDK');
-    return { data: transformStoreOrderToOrder(response.order) };
+    const resp = await fetch(`/api/customer/orders/${encodeURIComponent(orderId)}?fields=${encodeURIComponent('*items,*shipping_address,*billing_address,*payments,*items.variant')}`)
+    if (!resp.ok) {
+      const text = await resp.text()
+      throw new Error(text || 'Nie udało się pobrać szczegółów zamówienia (proxy)')
+    }
+    const data = await resp.json()
+    return { data: transformStoreOrderToOrder(data?.order || data) }
   } catch (error: any) {
-    console.error('❌ getOrderDetails SDK error:', error);
-    return { 
-      error: { 
-        message: error.message || 'Błąd pobierania szczegółów zamówienia',
-        status: 400 
-      } 
-    };
+    return {
+      error: {
+        message: error?.message || 'Błąd pobierania szczegółów zamówienia',
+        status: 400,
+      },
+    }
   }
 }
 
