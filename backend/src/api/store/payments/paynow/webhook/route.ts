@@ -13,15 +13,22 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const valid = verifyWebhookSignature(rawBody, signatureHeader, SIGNATURE_KEY)
     if (!valid) return res.status(400).send('Invalid signature')
 
-  const payload: PaynowWebhookPayload = JSON.parse(rawBody)
-  const { paymentId, externalId, status } = payload || {}
-  console.log('🔔 Paynow webhook (backend):', { paymentId, externalId, status })
+    const payload: PaynowWebhookPayload = JSON.parse(rawBody)
+    const { paymentId, externalId, status } = payload || {}
+    console.log('🔔 Paynow webhook (backend):', { paymentId, externalId, status })
 
-  // Minimal status handling (extend later):
-  // if (status === 'CONFIRMED' && externalId) { /* TODO: finalize cart */ }
-
-    // TODO: map status to Medusa payment / order state.
-    // If CONFIRMED and externalId => finalize cart: POST /store/carts/:id/complete
+    // Auto-finalizacja koszyka po potwierdzeniu płatności
+    if (status === 'CONFIRMED' && externalId) {
+      try {
+        const backendUrl = process.env.BACKEND_PUBLIC_URL || ''
+        const url = `${backendUrl}/store/carts/${encodeURIComponent(String(externalId))}/complete`
+        const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        const txt = await resp.text()
+        console.log('🧾 Cart complete via webhook:', resp.status, txt)
+      } catch (e) {
+        console.error('⚠️ Failed to complete cart on webhook:', e)
+      }
+    }
 
     return res.status(200).end()
   } catch (e) {
